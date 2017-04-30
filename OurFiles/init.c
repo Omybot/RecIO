@@ -49,42 +49,43 @@ void InitPorts(void)
 {	
 	AD1PCFGL=0xFFFF;	//Tous les ports Analogiques configurés en numérique
 	
-	
-	TRISAbits.TRISA0=1; // Codeur effet hall Ascenseur Droite - Ascenseur Droite
-	TRISAbits.TRISA1=1; // VadcV2 (AN1) - Gestion d'alim
-	TRISAbits.TRISA2=1; // Oscillateur 8MHz - Oscillateur
-	TRISAbits.TRISA3=1; // Fin de course Ascenseur Arrière - Ascenseur Arrière
+	TRISAbits.TRISA0=1; // MOT4_I - Moteurs
+	TRISAbits.TRISA1=1; // MOT2_I - Moteurs
+	TRISAbits.TRISA2=1; // OSC - Oscillateur
+	TRISAbits.TRISA3=0; // RA3 - Mezzanine - (RECIO)AX12/CDS Direction
 	TRISAbits.TRISA4=0; // RST - Ethernet RST
-	TRISAbits.TRISA7=0; // Direction - CDS_AX12
-	TRISAbits.TRISA8=1; // Couleur - Gestion match
+	TRISAbits.TRISA7=0; // RA7 - Mezzanine - (RECIO)Capteur couleur - S3
+	TRISAbits.TRISA8=0; // RA8 - Mezzanine - (RECIO)Capteur couleur - LED
 	TRISAbits.TRISA9=0; // CS - Ethernet CS
-	TRISAbits.TRISA10=1; //  - 
-	TRISBbits.TRISB0=1; // Codeur effet hall Ascenseur Gauche - Ascenseur Gauche
-	TRISBbits.TRISB1=1; // I_LMD18200_1 - Sonde courant Ascenseur Gauche
-	TRISBbits.TRISB2=1; // I_LMD18200_2 - Sonde courant Ascenseur Droite
-	TRISBbits.TRISB3=1; // Switchs Ascenseur Gauche - Ascenseur Gauche
-	TRISBbits.TRISB4=1; // Jack - Gestion match
+	TRISAbits.TRISA10=0; // RA10 - Mezzanine - (RECIO)Capteur couleur - S2
+	
+	TRISBbits.TRISB0=1; // MOT1_I - Moteurs
+	TRISBbits.TRISB1=1; // MOT3_I - Moteurs
+	TRISBbits.TRISB2=1; // RB2 - Mezzanine - (RECIO)Disponible
+	TRISBbits.TRISB3=1; // RB3 - Mezzanine - (RECIO)Lulu TX - UART RX
+	TRISBbits.TRISB4=1; // RB4 - Mezzanine - (RECIO)Capteur couleur - OUT
 	TRISBbits.TRISB5=1; // PGD - JTAG 
 	TRISBbits.TRISB6=1; // PGC - JTAG 
 	TRISBbits.TRISB7=1; // INT - Ethernet INT
-	TRISBbits.TRISB8=1; // LA1 - Capteur Laser 1
-	TRISBbits.TRISB9=0; // DIR - Ascenseur Droite
-	TRISBbits.TRISB10=0; // PWM - Ascenseur Droite
-	TRISBbits.TRISB11=1; // LA2 - Capteur Laser 2
-	TRISBbits.TRISB12=0; // DIR - Pompe
-	TRISBbits.TRISB13=0; // PWM - Pompe
-	TRISBbits.TRISB14=1; // TOP - Balise TopTour
-	TRISBbits.TRISB15=0; // PWM (Hacheur 1 cadran) - Balise PWM
-	TRISCbits.TRISC0=1; // Switchs Ascenseur Droite - Ascenseur Droite
-	TRISCbits.TRISC1=1; // LIDAR TX
-	TRISCbits.TRISC2=0; // LIDAR RX
-	TRISCbits.TRISC3=0; // SDO1 - Ethernet SDO1
-	TRISCbits.TRISC4=0; // SCK1 - Ethernet SCK1
-	TRISCbits.TRISC5=1; // SDI1 - Ethernet SDI1
-	TRISCbits.TRISC6=0; // DIR - Ascenseur Gauche
-	TRISCbits.TRISC7=0; // PWM - Ascenseur Gauche
-	TRISCbits.TRISC8=1; // RX - CDS_AX12
-	TRISCbits.TRISC9=0; // TX - CDS_AX12
+	TRISBbits.TRISB8=1; // CODEUR1B - Codeurs
+	TRISBbits.TRISB9=1; // CODEUR1A - Codeurs
+	TRISBbits.TRISB10=0; // MOT2_PWMH - Moteurs
+	TRISBbits.TRISB11=0; // MOT2_PWML - Moteurs
+	TRISBbits.TRISB12=0; // MOT3_PWMH - Moteurs
+	TRISBbits.TRISB13=0; // MOT3_PWML - Moteurs
+	TRISBbits.TRISB14=0; // MOT4_PWMH - Moteurs
+	TRISBbits.TRISB15=0; // MOT4_PWML - Moteurs
+	
+	TRISCbits.TRISC0=0; // RC0 - Mezzanine - (RECIO)Lulu RX - UART TX
+	TRISCbits.TRISC1=1; // RC1 - Mezzanine - (RECIO)AX12/CDS RX
+	TRISCbits.TRISC2=0; // RC2 - Mezzanine - (RECIO)AX12/CDS TX
+	TRISCbits.TRISC3=0; // SCK1 - Ethernet MSCK
+	TRISCbits.TRISC4=0; // SDO1 - Ethernet MOSI
+	TRISCbits.TRISC5=1; // SDI1 - Ethernet MISO
+	TRISCbits.TRISC6=0; // MOT1_PWMH - Moteurs
+	TRISCbits.TRISC7=0; // MOT1_PWML - Moteurs
+	TRISCbits.TRISC8=1; // CODEUR2A - Codeurs
+	TRISCbits.TRISC9=1; // CODEUR2B - Codeurs
 
 	//CNPU2bits.CN22PUE = 1; 	// Laser 1 pull up
 	//CNPU1bits.CN15PUE = 1; 	// Laser 1 pull up
@@ -92,9 +93,10 @@ void InitPorts(void)
 	CNPU1bits.CN7PUE = 1;	// Switch fin de course 
 	CNPU1bits.CN8PUE = 1;	// Switch fin de course 
 
-	RPOR9bits.RP19R   = 0b00111;
-	RPOR10bits.RP20R  = 0b01000;
-	RPINR20bits.SDI1R = 21;
+	//Configuration des ports pour la liaison SPI avec le module Ethernet
+	RPOR9bits.RP19R   = 0b01000; // SCK1  		<==> RP19 RC3 
+	RPOR10bits.RP20R  = 0b00111; // SDO1		<==> RP20 RC4
+	RPINR20bits.SDI1R = 21     ; // SDI1 		<==> RP21 RC5
 	
 	RPOR12bits.RP25R = 0b00011;		//TX RP25 U1TX
     RPINR18bits.U1RXR = 24;			//RX RP24 U1RXR
