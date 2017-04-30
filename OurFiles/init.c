@@ -98,11 +98,11 @@ void InitPorts(void)
 	RPOR10bits.RP20R  = 0b00111; // SDO1		<==> RP20 RC4
 	RPINR20bits.SDI1R = 21     ; // SDI1 		<==> RP21 RC5
 	
-	RPOR12bits.RP25R = 0b00011;		//TX RP25 U1TX
-    RPINR18bits.U1RXR = 24;			//RX RP24 U1RXR
+	RPOR9bits.RP18R = 0b00011;		//TX RP18 U1TX
+    RPINR18bits.U1RXR = 17;			//RX RP17 U1RXR
     
-	RPOR9bits.RP18R = 0b00101;		//TX RP12 U2TX
-    RPINR19bits.U2RXR = 17;			//RX RP13 U2RXR
+//	RPOR9bits.RP18R = 0b00101;		//TX RP12 U2TX
+//    RPINR19bits.U2RXR = 17;			//RX RP13 U2RXR
     
 
 	RPINR7bits.IC1R = 14;  	// Capteur effet hall
@@ -110,7 +110,7 @@ void InitPorts(void)
 	RPINR10bits.IC7R = 11; 	// Capteur laser 2 (haut)
 
 	//Initialisation du sens de communication pour les AX12
-	LATAbits.LATA7 = 1;	// 1 J'envoie et 0 je réceptionne
+	LATAbits.LATA3 = 1;	// 1 J'envoie et 0 je réceptionne
 }
 
 /*

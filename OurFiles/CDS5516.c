@@ -28,7 +28,7 @@ void CDS5516EnvoiMessage(char baud, char id, char fonction, int valeur, char nbC
 	char taille = 0, instruction = 0, adresse = 0, val = 0,val1 = 0, checksum = 0;
 	int i;
 
-	LATAbits.LATA7 = 1;	// 1 J'envoie et 0 je réceptionne
+	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
 
 	//InitUART2();	//Initialisation de la liaison série 2 (UART2)
 	//U2BRG = ((FCY/baud)/4)-1;
@@ -69,7 +69,7 @@ void CDS5516Reset(char baud, char id)
 	char taille = 0, instruction = 0, checksum = 0;
 	int i;
 
-	LATAbits.LATA7 = 1;	// 1 J'envoie et 0 je réceptionne
+	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
 
 	//InitUART2();	//Initialisation de la liaison série 2 (UART2)
 	//U2BRG = ((FCY/baud)/4)-1;
@@ -95,7 +95,7 @@ int CDS5516Ping(char baud, char id)
 	char checksumRecu;
 	char messageRecu[20];
 
-	LATAbits.LATA7 = 1;	// 1 J'envoie et 0 je réceptionne
+	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
 
 	//InitUART2();	//Initialisation de la liaison série 2 (UART2)
 	//U2BRG = ((FCY/baud)/4)-1;
@@ -113,7 +113,7 @@ int CDS5516Ping(char baud, char id)
 	UART2PutChar(checksum);
 
 	// Réception de la réponse
-	LATAbits.LATA7 = 0;	// 1 J'envoie et 0 je réceptionne
+	DIRECTION = 0;	// 1 J'envoie et 0 je réceptionne
 
 	timeout_servo = 0;
 	while(flag_servo==0) if(timeout_servo>10) return(recu_nbr); // ajouter un timeout !!!!
@@ -139,7 +139,7 @@ int CDS5516DemandeMessage(char baud, char id, char fonction, char nbChar)
 	char checksumRecu;
 	char messageRecu[20];
 
-	LATAbits.LATA7 = 1;	// 1 J'envoie et 0 je réceptionne
+	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
 
 	//InitUART2();	//Initialisation de la liaison série 2 (UART2)
 	//U2BRG = ((FCY/baud)/4)-1;
@@ -160,7 +160,7 @@ int CDS5516DemandeMessage(char baud, char id, char fonction, char nbChar)
 	UART2PutChar(checksum);
 
 	// Réception de la réponse
-	LATAbits.LATA7 = 0;	// 1 J'envoie et 0 je réceptionne
+	DIRECTION = 0;	// 1 J'envoie et 0 je réceptionne
 	
 	// Ici il faut que messageRecu contienne la trame servo recu
 	timeout_servo = 0;
@@ -198,7 +198,7 @@ char* CDS5516DemandeMessageAllIn(char id, char fonction)
 	static char messageRecu[TAILLE_MSG_UART];
 	char tabError[2] = {42,42};
 
-	LATAbits.LATA7 = 1;	// 1 J'envoie et 0 je réceptionne
+	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
 
 	U1BRG = globalBaudrate; 
 
@@ -217,7 +217,7 @@ char* CDS5516DemandeMessageAllIn(char id, char fonction)
 	UART2PutChar(checksum);
 
 	// Réception de la réponse
-	LATAbits.LATA7 = 0;	// 1 J'envoie et 0 je réceptionne
+	DIRECTION = 0;	// 1 J'envoie et 0 je réceptionne
 	
 	// Ici il faut que messageRecu contienne la trame servo recu
 	timeout_servo = 0;

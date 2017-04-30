@@ -29,6 +29,8 @@ static BYTE msg[20];
 #define TAILLE_MSG_UART 60
 #define NB_CHAR_ALL_IN 50
 
+#define DIRECTION (LATAbits.LATA3)
+
 void CDS5516SetUXBRG(int baud);
 
 // Fonctions de communication servomoteur
