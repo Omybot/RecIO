@@ -30,6 +30,7 @@ static BYTE msg[20];
 #define NB_CHAR_ALL_IN 50
 
 #define DIRECTION (LATAbits.LATA3)
+#define UBRVALUE  (U1BRG)
 
 void CDS5516SetUXBRG(int baud);
 

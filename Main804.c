@@ -244,18 +244,14 @@ int main(void)
 	envoiTest.nbChar = 19;
 	// V V [LF] 0 0 P [LF] 
 	
-
 	Etat_Capteur_OnOff.nbChar = 4;
 	messCapteur_OnOff[0] = 0xC4;
 	messCapteur_OnOff[1] = CMD_REPONSE_CAPTEUR_ONOFF;
 	Etat_Capteur_OnOff.message = messCapteur_OnOff;
 	
-
 	InitClk(); 		// Initialisation de l'horloge
 	InitPorts(); 	// Initialisation des ports E/S
 
-	
-	
 	// Initialize the Input Capture Module
 	IC1CONbits.ICM = 0b00; // Disable Input Capture 1 module
 	IC1CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
@@ -316,46 +312,11 @@ int main(void)
 	InitUserUdp();
 	
 	Init_Interrupt_Priority();							
-	InitUART2();	
+	InitUART1();	
 	Init_Servos();
 	//Init_Input_Capture();
 //	Init_Alimentation();
 	
-	// Ajout code pour initialiser la liaison UART LIDAR
-
-	// Init U2
-
-//	U2BRG = 21;			// 115200
-//	U2MODEbits.UARTEN = 1;		// UART2 is Enabled
-//	U2MODEbits.USIDL = 0;		// Continue operation at Idlestate
-//	U2MODEbits.IREN = 0;		// IrDA En/Decoder is disabled
-//	U2MODEbits.RTSMD = 0; 		// flow control mode
-//	U2MODEbits.UEN = 0b00;		// UTX, RTX, are enable and on use.
-//	U2MODEbits.WAKE = 0;		// Wake-up on start bit is enabled
-//	U2MODEbits.LPBACK = 0;		// Loop-back is disabled
-//	U2MODEbits.ABAUD = 0;		// auto baud is disabled
-//	U2MODEbits.URXINV = 0;		// No RX inversion
-//	U2MODEbits.BRGH = 0;		// low boud rate
-//	U2MODEbits.PDSEL = 0b00; 	// 8bit no parity
-//	U2MODEbits.STSEL = 0;		// one stop bit
-//
-//	U2STAbits.UTXISEL1 = 0b00;
-//	U2STA &= 0xDFFF;			// clear TXINV by bit masking
-//	U2STAbits.UTXBRK = 0;		// sync break tx is disabled
-//	U2STAbits.UTXEN = 1;		// transmit  is enabled
-//	U2STAbits.URXISEL = 0b00;	// interrupt flag bit is set when RXBUF is filled whith 1 character
-//	U2STAbits.ADDEN = 0;		// address detect mode is disabled
-//
-////  IPC3bits.U2TXIP = 2;         // set UART Tx interrupt priority
-//	IFS1bits.U2TXIF = 0;         // clear UART Tx interrupt flag
-//	IEC1bits.U2TXIE = 0;         // enable UART Tx interrupt
-//
-//	IFS1bits.U2RXIF = 0;		 // clear interrupt flag of rx
-//	IEC1bits.U2RXIE = 1;		 // enable rx recieved data
-////  IPC2bits.U2RXIP = 2;
-//
-	// Fin ajout code
-
 	InitADC();
 	InitDMA();
 	DelayMs(100); 
@@ -368,6 +329,15 @@ int main(void)
 	
 	pwm(ID_MOTEUR_ASCENSEUR_GAUCHE,0); // BRAS DROIT sens - pour prendre
 	pwm(ID_MOTEUR_ASCENSEUR_DROITE,0);	// BRAS GAUCHE sens - pour prendre
+
+	// Test AX12
+	CDS5516EnvoiLed(103,17,0);
+	DelayMs(1000); 
+	CDS5516EnvoiLed(103,17,1);
+	DelayMs(1000); 
+	CDS5516EnvoiLed(103,17,0);
+	DelayMs(1000); 
+	CDS5516EnvoiLed(103,17,1);
 
 	while(1)
   	{

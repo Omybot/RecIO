@@ -13,7 +13,6 @@ unsigned int ADC_Results[9],DmaBuffer = 0,cpt_moy=0,courant=0;
 float sum;
 unsigned char telem,telem_front;
 
-
 void InitClk(void)
 {	
 	PLLFBD = 38;				// Multiply by 40 for 160MHz VCO output (8MHz XT oscillator)
@@ -165,24 +164,7 @@ void Init_Timer(void)
 	Init_Timer4();
 	Init_Timer5();
 }
-/*void Init_Timer2(void)		
-{
-	T2CONbits.TON 	= 0;	//Stops the timer
-	T2CONbits.TSIDL = 0;
-	T2CONbits.TGATE = 0;
-	T2CONbits.TCS	= 0;
-	T2CONbits.T32	= 0;
-	T2CONbits.TCKPS = 0b10; //Prescaler set to 1:64
-	
-	TMR2 = 0; 				//Clear timer register
-	PR2  = 1;				//Load the period value (1 = 3.2us)
 
-//	IPC1bits.T2IP = 4; 		//Set Timer2 Interrupt Priority Level
-	IFS0bits.T2IF = 0; 		//Clear Timer2 Interrupt Flag
-	IEC0bits.T2IE = 1; 		//Enable Timer2 interrupt
-	T2CONbits.TON = 1;		//Timer enabled
-	
-}*/
 
 void Init_Timer2(void)		
 {
@@ -341,6 +323,47 @@ void InitDMA(void)
 	DMA5CONbits.CHEN=1;				// Enable DMA
 }
 
+void InitUART1(void) 
+{
+    U1BRG = 522;				// ? Baud
+	U1MODEbits.UARTEN = 1;		// UART1 is Enabled
+	U1MODEbits.USIDL = 0;		// Continue operation at Idlestate
+	U1MODEbits.IREN = 0;		// IrDA En/Decoder is disabled
+	U1MODEbits.RTSMD = 0; 		// flow control mode
+	U1MODEbits.UEN = 0b00;		// UTX, RTX, U2CTS, U2RTS are enable and on use.
+	U1MODEbits.WAKE = 0;		// Wake-up on start bit is enabled
+	U1MODEbits.LPBACK = 0;		// Loop-back is disabled
+	U1MODEbits.ABAUD = 0;		// auto baud is disabled
+	U1MODEbits.URXINV = 0;		// No RX inversion
+	U1MODEbits.BRGH = 1;		// low boud rate
+	U1MODEbits.PDSEL = 0b00; 	// 8bit no parity
+	U1MODEbits.STSEL = 0;		// one stop bit
+
+	U1STAbits.UTXISEL1 = 0b00;
+	U1STA &= 0xDFFF;			// clear TXINV by bit masking
+	U1STAbits.UTXBRK = 0;		// sync break tx is disabled
+	U1STAbits.UTXEN = 1;		// transmit  is enabled
+	U1STAbits.URXISEL = 0b00;	// interrupt flag bit is set when RXBUF is filled whith 1 character
+	U1STAbits.ADDEN = 0;		// address detect mode is disabled
+
+	IPC3bits.U1TXIP = 2;         // set UART Tx interrupt priority (modif by mouly)
+	IFS0bits.U1TXIF = 0;         // clear UART Tx interrupt flag
+	IEC0bits.U1TXIE = 0;         // enable UART Tx interrupt
+
+	IFS0bits.U1RXIF = 0;		 // clear interrupt flag of rx
+	IEC0bits.U1RXIE = 1;		 // enable rx recieved data (set to 0 by mouly)
+    IPC2bits.U1RXIP = 1;		 // Interrupt priority 2 (modif by mouly)
+   
+    RPOR12bits.RP25R  = 0b00011;     
+    RPINR18bits.U1RXR = 0b11000;              
+    TRISCbits.TRISC8 = 0;
+    TRISCbits.TRISC9 = 1;
+    AD1PCFGL = 0xFFFF;
+}
+
+void InitUART2(void)
+{
+}
 void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void)
 {
 	static int seuil[2]={2500,2500};

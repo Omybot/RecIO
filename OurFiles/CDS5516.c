@@ -11,11 +11,6 @@ int globalBaudrate = UXBRG_AX12_19200;
 //              Communication Servo            //
 //                                             //
 /////////////////////////////////////////////////
-//delay ajouté par Mouly
-void delay_us_uart(float mult){
-    long i = 40000*mult;
-    while(i--);
-}
 
 void CDS5516SetUXBRG(int baud)
 {
@@ -29,10 +24,7 @@ void CDS5516EnvoiMessage(char baud, char id, char fonction, int valeur, char nbC
 	int i;
 
 	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
-
-	//InitUART2();	//Initialisation de la liaison série 2 (UART2)
-	//U2BRG = ((FCY/baud)/4)-1;
-	U1BRG = globalBaudrate;	
+	UBRVALUE = globalBaudrate;	
 												
 	//Instruction écriture valeur
 	instruction = 0x03;  	
@@ -51,16 +43,16 @@ void CDS5516EnvoiMessage(char baud, char id, char fonction, int valeur, char nbC
 		checksum = (char)(0xFF-(char)(id + taille + instruction + adresse + val));
 	}
 
-	UART2PutChar(0xFF);
-	UART2PutChar(0xFF);
-	UART2PutChar(id);
-	UART2PutChar(taille);
-	UART2PutChar(instruction);
-	UART2PutChar(adresse);
-	UART2PutChar(val);	
+	UART1PutChar(0xFF);
+	UART1PutChar(0xFF);
+	UART1PutChar(id);
+	UART1PutChar(taille);
+	UART1PutChar(instruction);
+	UART1PutChar(adresse);
+	UART1PutChar(val);	
 	if(nbChar == 2)
-		UART2PutChar(val1);
-	UART2PutChar(checksum);
+		UART1PutChar(val1);
+	UART1PutChar(checksum);
 }
 
 // Envoi d'un ordre série de reset au servomoteur
@@ -70,21 +62,18 @@ void CDS5516Reset(char baud, char id)
 	int i;
 
 	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
-
-	//InitUART2();	//Initialisation de la liaison série 2 (UART2)
-	//U2BRG = ((FCY/baud)/4)-1;
-	U1BRG = globalBaudrate; 
+	UBRVALUE = globalBaudrate; 
 
 	taille = 0x02;
 	instruction = 0x06;  
 	checksum = (char)(0xFF-(char)(id + taille + instruction));
 
-	UART2PutChar(0xFF);
-	UART2PutChar(0xFF);
-	UART2PutChar(id);
-	UART2PutChar(taille);
-	UART2PutChar(instruction);
-	UART2PutChar(checksum);
+	UART1PutChar(0xFF);
+	UART1PutChar(0xFF);
+	UART1PutChar(id);
+	UART1PutChar(taille);
+	UART1PutChar(instruction);
+	UART1PutChar(checksum);
 }
 
 // Envoi d'un ping série au servomoteur auquel il est censé répondre par un état de ses erreurs
@@ -96,21 +85,18 @@ int CDS5516Ping(char baud, char id)
 	char messageRecu[20];
 
 	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
-
-	//InitUART2();	//Initialisation de la liaison série 2 (UART2)
-	//U2BRG = ((FCY/baud)/4)-1;
-	U1BRG = globalBaudrate;
+	UBRVALUE = globalBaudrate;
  
 	taille = 0x02;  															//Nbr de paramètres + 2
 	instruction = 0x01; 
 	checksum = (char)(0xFF-(char)(id + taille + instruction));
 
-	UART2PutChar(0xFF);
-	UART2PutChar(0xFF);
-	UART2PutChar(id);
-	UART2PutChar(taille);
-	UART2PutChar(instruction);
-	UART2PutChar(checksum);
+	UART1PutChar(0xFF);
+	UART1PutChar(0xFF);
+	UART1PutChar(id);
+	UART1PutChar(taille);
+	UART1PutChar(instruction);
+	UART1PutChar(checksum);
 
 	// Réception de la réponse
 	DIRECTION = 0;	// 1 J'envoie et 0 je réceptionne
@@ -140,24 +126,21 @@ int CDS5516DemandeMessage(char baud, char id, char fonction, char nbChar)
 	char messageRecu[20];
 
 	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
-
-	//InitUART2();	//Initialisation de la liaison série 2 (UART2)
-	//U2BRG = ((FCY/baud)/4)-1;
-	U1BRG = globalBaudrate; 
+	UBRVALUE = globalBaudrate; 
 
 	taille = 0x04;  															//Nbr de paramètres + 2
 	instruction = 0x02;  														//Instruction écriture valeur
 	adresse = fonction;
 	checksum = (char)(0xFF-(char)(id + taille + instruction + nbChar + adresse));
 
-	UART2PutChar(0xFF);
-	UART2PutChar(0xFF);
-	UART2PutChar(id);
-	UART2PutChar(taille);
-	UART2PutChar(instruction);
-	UART2PutChar(adresse);
-	UART2PutChar(nbChar);
-	UART2PutChar(checksum);
+	UART1PutChar(0xFF);
+	UART1PutChar(0xFF);
+	UART1PutChar(id);
+	UART1PutChar(taille);
+	UART1PutChar(instruction);
+	UART1PutChar(adresse);
+	UART1PutChar(nbChar);
+	UART1PutChar(checksum);
 
 	// Réception de la réponse
 	DIRECTION = 0;	// 1 J'envoie et 0 je réceptionne
@@ -199,22 +182,21 @@ char* CDS5516DemandeMessageAllIn(char id, char fonction)
 	char tabError[2] = {42,42};
 
 	DIRECTION = 1;	// 1 J'envoie et 0 je réceptionne
-
-	U1BRG = globalBaudrate; 
+	UBRVALUE = globalBaudrate; 
 
 	taille = 0x04;  															//Nbr de paramètres + 2
 	instruction = 0x02;  														//Instruction écriture valeur
 	adresse = fonction;
 	checksum = (char)(0xFF-(char)(id + taille + instruction + nbChar + adresse));
 
-	UART2PutChar(0xFF);
-	UART2PutChar(0xFF);
-	UART2PutChar(id);
-	UART2PutChar(taille);
-	UART2PutChar(instruction);
-	UART2PutChar(adresse);
-	UART2PutChar(nbChar);
-	UART2PutChar(checksum);
+	UART1PutChar(0xFF);
+	UART1PutChar(0xFF);
+	UART1PutChar(id);
+	UART1PutChar(taille);
+	UART1PutChar(instruction);
+	UART1PutChar(adresse);
+	UART1PutChar(nbChar);
+	UART1PutChar(checksum);
 
 	// Réception de la réponse
 	DIRECTION = 0;	// 1 J'envoie et 0 je réceptionne
