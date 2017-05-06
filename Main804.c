@@ -20,6 +20,13 @@
 
 #define UART_BUFFER_SIZE	100
 
+// UART
+#define SIZE_TRAME_INIT_SERVO 15
+unsigned char InitServo[SIZE_TRAME_INIT_SERVO] = {0x04, 0x84, 0x00, 0x08, 0x27, 0x04, 0x84, 0x10, 0x00, 0x19, 0x04, 0x89, 0x10, 0x10, 0x4E};
+unsigned char ptr_read_buffer_uart=0,ptr_write_buffer_uart=0;
+unsigned char buffer_envoi_uart[UART_BUFFER_SIZE];
+// Fin UART
+
 unsigned char Demande_lidar = 0;
 
 unsigned char timeout_lidar=0;
@@ -30,7 +37,7 @@ unsigned char ptr_read_buffer_uart_rec=0,save_read;
 unsigned char cpt_antirebond_rb3,old_rb3;
 
 unsigned char flag_envoi_uart,buffer_envoi_uart[UART_BUFFER_SIZE],ptr_write_buffer_uart;
-unsigned char ptr_read_buffer_uart=0,ptr_write_buffer_uart=0;
+//unsigned char ptr_read_buffer_uart=0,ptr_write_buffer_uart=0;
 unsigned char buffer_envoi_uart[UART_BUFFER_SIZE];
 
 unsigned char jack_cpt=0;
@@ -252,33 +259,33 @@ int main(void)
 	InitClk(); 		// Initialisation de l'horloge
 	InitPorts(); 	// Initialisation des ports E/S
 
-	// Initialize the Input Capture Module
-	IC1CONbits.ICM = 0b00; // Disable Input Capture 1 module
-	IC1CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
-	IC1CONbits.ICI = 0b00; // Interrupt on every capture event
-	IC1CONbits.ICM = 0b011; // Generate capture event on every Rising edge
-	// Enable Capture Interrupt And Timer2
-	IPC0bits.IC1IP = 3; // Setup IC1 interrupt priority level
-	IFS0bits.IC1IF = 0; // Clear IC1 Interrupt Status Flag
-	IEC0bits.IC1IE = 1; // Enable IC1 interrupt
-	// Initialize the Input Capture Module
-	IC2CONbits.ICM = 0b00; // Disable Input Capture 1 module
-	IC2CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
-	IC2CONbits.ICI = 0b00; // Interrupt on every capture event
-	IC2CONbits.ICM = 0b011; // Generate capture event on every edge // change
-	// Enable Capture Interrupt And Timer2
-	IPC1bits.IC2IP = 2; // Setup IC1 interrupt priority level
-	IFS0bits.IC2IF = 0; // Clear IC1 Interrupt Status Flag
-	IEC0bits.IC2IE = 1; // Enable IC1 interrupt
-	// Initialize the Input Capture Module
-	IC7CONbits.ICM = 0b00; // Disable Input Capture 1 module
-	IC7CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
-	IC7CONbits.ICI = 0b00; // Interrupt on every capture event
-	IC7CONbits.ICM = 0b011; // Generate capture event on every edge // change
-	// Enable Capture Interrupt And Timer2
-	IPC5bits.IC7IP = 1; // Setup IC1 interrupt priority level
-	IFS1bits.IC7IF = 0; // Clear IC1 Interrupt Status Flag
-	IEC1bits.IC7IE = 1; // Enable IC1 interrupt
+//	// Initialize the Input Capture Module
+//	IC1CONbits.ICM = 0b00; // Disable Input Capture 1 module
+//	IC1CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
+//	IC1CONbits.ICI = 0b00; // Interrupt on every capture event
+//	IC1CONbits.ICM = 0b011; // Generate capture event on every Rising edge
+//	// Enable Capture Interrupt And Timer2
+//	IPC0bits.IC1IP = 3; // Setup IC1 interrupt priority level
+//	IFS0bits.IC1IF = 0; // Clear IC1 Interrupt Status Flag
+//	IEC0bits.IC1IE = 1; // Enable IC1 interrupt
+//	// Initialize the Input Capture Module
+//	IC2CONbits.ICM = 0b00; // Disable Input Capture 1 module
+//	IC2CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
+//	IC2CONbits.ICI = 0b00; // Interrupt on every capture event
+//	IC2CONbits.ICM = 0b011; // Generate capture event on every edge // change
+//	// Enable Capture Interrupt And Timer2
+//	IPC1bits.IC2IP = 2; // Setup IC1 interrupt priority level
+//	IFS0bits.IC2IF = 0; // Clear IC1 Interrupt Status Flag
+//	IEC0bits.IC2IE = 1; // Enable IC1 interrupt
+//	// Initialize the Input Capture Module
+//	IC7CONbits.ICM = 0b00; // Disable Input Capture 1 module
+//	IC7CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
+//	IC7CONbits.ICI = 0b00; // Interrupt on every capture event
+//	IC7CONbits.ICM = 0b011; // Generate capture event on every edge // change
+//	// Enable Capture Interrupt And Timer2
+//	IPC5bits.IC7IP = 1; // Setup IC1 interrupt priority level
+//	IFS1bits.IC7IF = 0; // Clear IC1 Interrupt Status Flag
+//	IEC1bits.IC7IE = 1; // Enable IC1 interrupt
 	
 	Init_Timer();	// Initialisation Timer2,Timer4 & Timer5
 	InitQEI(); 		// Initialisation des entrées en quadrature
@@ -312,7 +319,7 @@ int main(void)
 	InitUserUdp();
 	
 	Init_Interrupt_Priority();							
-	InitUART1();	
+	InitUART();	
 	Init_Servos();
 	//Init_Input_Capture();
 //	Init_Alimentation();
@@ -339,41 +346,48 @@ int main(void)
 	DelayMs(1000); 
 	CDS5516EnvoiLed(103,17,1);
 
+	for(i=0;i<SIZE_TRAME_INIT_SERVO;i++)
+	{
+		buffer_envoi_uart[ptr_write_buffer_uart++]=InitServo[i];
+		if(ptr_write_buffer_uart >= UART_BUFFER_SIZE)
+			ptr_write_buffer_uart=0;
+	}
+
 	while(1)
   	{
-		if(Demande_lidar)	
-		{
-			Demande_lidar=0;
-			EnvoiUART(envoiTest);
-		}
-		
-		save_write = ptr_write_buffer_uart_rec;
-		save_read = ptr_read_buffer_uart_rec;
-		if((save_write != save_read))
-		{
-			if(save_write < save_read)
-				nbr_char_to_send = 241 - save_read + save_write;
-			else
-				nbr_char_to_send = save_write - save_read;
-		}
-		else
-		{
-			nbr_char_to_send = 0;
-		}	
-
-		if(((nbr_char_to_send > 200) || (nbr_char_to_send !=0 && timeout_lidar > 50)))
-		{	
-			for(i=0;i<nbr_char_to_send;i++)
-			{
-				messUART[i+3]=Buffer_passerelle_udpuart[save_read++];
-				if(save_read>240)
-					save_read=0;
-			}
-			timeout_lidar=0;
-			envoiUART.nbChar = nbr_char_to_send+3;
-			EnvoiUserUdp(envoiUART);
-			ptr_read_buffer_uart_rec = save_write;
-		}			
+//		if(Demande_lidar)	
+//		{
+//			Demande_lidar=0;
+//			EnvoiUART(envoiTest);
+//		}
+//		
+//		save_write = ptr_write_buffer_uart_rec;
+//		save_read = ptr_read_buffer_uart_rec;
+//		if((save_write != save_read))
+//		{
+//			if(save_write < save_read)
+//				nbr_char_to_send = 241 - save_read + save_write;
+//			else
+//				nbr_char_to_send = save_write - save_read;
+//		}
+//		else
+//		{
+//			nbr_char_to_send = 0;
+//		}	
+//
+//		if(((nbr_char_to_send > 200) || (nbr_char_to_send !=0 && timeout_lidar > 50)))
+//		{	
+//			for(i=0;i<nbr_char_to_send;i++)
+//			{
+//				messUART[i+3]=Buffer_passerelle_udpuart[save_read++];
+//				if(save_read>240)
+//					save_read=0;
+//			}
+//			timeout_lidar=0;
+//			envoiUART.nbChar = nbr_char_to_send+3;
+//			EnvoiUserUdp(envoiUART);
+//			ptr_read_buffer_uart_rec = save_write;
+//		}			
 
 		if((ptr_write_buffer_uart != ptr_read_buffer_uart) && U2STAbits.TRMT != 0)
 		{

@@ -27,10 +27,10 @@ void InitClk(void)
 void Init_Interrupt_Priority(void)
 {
 
-	IPC0bits.IC1IP  = 6;			// Balise
-	IPC1bits.IC2IP  = 6;			// Balise
-	IPC5bits.IC7IP  = 6;			// Balise
-	IPC4bits.CNIP 	= 6;			// Switch fin de course Ascenseur Arriere
+//	IPC0bits.IC1IP  = 6;			// Balise
+//	IPC1bits.IC2IP  = 6;			// Balise
+//	IPC5bits.IC7IP  = 6;			// Balise
+//	IPC4bits.CNIP 	= 6;			// Switch fin de course Ascenseur Arriere
 	IPC0bits.T1IP   = 4;	//5		// Timer 1 used by Ethernet (Default value = 2)
 	IPC1bits.T2IP   = 5;	//6		// Timer 2 used to generate PWM
 //	IPC2bits.T3IP   = 7;			// Interrupt UNUSED
@@ -89,8 +89,8 @@ void InitPorts(void)
 	//CNPU2bits.CN22PUE = 1; 	// Laser 1 pull up
 	//CNPU1bits.CN15PUE = 1; 	// Laser 1 pull up
 	//CNPU1bits.CN12PUE = 1; 	// Toptour pull up (old CNPU1bits.CN5PUE)
-	CNPU1bits.CN7PUE = 1;	// Switch fin de course 
-	CNPU1bits.CN8PUE = 1;	// Switch fin de course 
+//	CNPU1bits.CN7PUE = 1;	// Switch fin de course 
+//	CNPU1bits.CN8PUE = 1;	// Switch fin de course 
 
 	//Configuration des ports pour la liaison SPI avec le module Ethernet
 	RPOR9bits.RP19R   = 0b01000; // SCK1  		<==> RP19 RC3 
@@ -100,13 +100,12 @@ void InitPorts(void)
 	RPOR9bits.RP18R = 0b00011;		//TX RP18 U1TX
     RPINR18bits.U1RXR = 17;			//RX RP17 U1RXR
     
-//	RPOR9bits.RP18R = 0b00101;		//TX RP12 U2TX
-//    RPINR19bits.U2RXR = 17;			//RX RP13 U2RXR
-    
-
-	RPINR7bits.IC1R = 14;  	// Capteur effet hall
-	RPINR7bits.IC2R = 8;  	// Capteur laser 1 (bas)
-	RPINR10bits.IC7R = 11; 	// Capteur laser 2 (haut)
+	RPOR8bits.RP16R = 0b00101;		//TX RP16 U2TX
+    RPINR19bits.U2RXR = 3;			//RX RP3 U2RXR
+//    
+//	RPINR7bits.IC1R = 14;  	// Capteur effet hall
+//	RPINR7bits.IC2R = 8;  	// Capteur laser 1 (bas)
+//	RPINR10bits.IC7R = 11; 	// Capteur laser 2 (haut)
 
 	//Initialisation du sens de communication pour les AX12
 	LATAbits.LATA3 = 1;	// 1 J'envoie et 0 je réceptionne
@@ -323,6 +322,12 @@ void InitDMA(void)
 	DMA5CONbits.CHEN=1;				// Enable DMA
 }
 
+void InitUART(void)
+{
+	InitUART1();
+	InitUART2();
+}
+
 void InitUART1(void) 
 {
     U1BRG = 522;				// ? Baud
@@ -353,16 +358,36 @@ void InitUART1(void)
 	IFS0bits.U1RXIF = 0;		 // clear interrupt flag of rx
 	IEC0bits.U1RXIE = 1;		 // enable rx recieved data (set to 0 by mouly)
     IPC2bits.U1RXIP = 1;		 // Interrupt priority 2 (modif by mouly)
-   
-    RPOR12bits.RP25R  = 0b00011;     
-    RPINR18bits.U1RXR = 0b11000;              
-    TRISCbits.TRISC8 = 0;
-    TRISCbits.TRISC9 = 1;
-    AD1PCFGL = 0xFFFF;
 }
 
 void InitUART2(void)
 {
+	U2BRG = 259;				// 115200 baud
+	U2MODEbits.UARTEN = 1;		// UART2 is Enabled
+	U2MODEbits.USIDL = 0;		// Continue operation at Idlestate
+	U2MODEbits.IREN = 0;		// IrDA En/Decoder is disabled
+	U2MODEbits.RTSMD = 0; 		// flow control mode
+	U2MODEbits.UEN = 0b00;		// UTX, RTX, are enable and on use.
+	U2MODEbits.WAKE = 0;		// Wake-up on start bit is enabled
+	U2MODEbits.LPBACK = 0;		// Loop-back is disabled
+	U2MODEbits.ABAUD = 0;		// auto baud is disabled
+	U2MODEbits.URXINV = 0;		// No RX inversion
+	U2MODEbits.BRGH = 0;		// low boud rate
+	U2MODEbits.PDSEL = 0b00; 	// 8bit no parity
+	U2MODEbits.STSEL = 0;		// one stop bit
+
+	U2STAbits.UTXISEL1 = 0b00;
+	U2STA &= 0xDFFF;			// clear TXINV by bit masking
+	U2STAbits.UTXBRK = 0;		// sync break tx is disabled
+	U2STAbits.UTXEN = 1;		// transmit  is enabled
+	U2STAbits.URXISEL = 0b00;	// interrupt flag bit is set when RXBUF is filled whith 1 character
+	U2STAbits.ADDEN = 0;		// address detect mode is disabled
+
+	IFS1bits.U2TXIF = 0;         // clear UART Tx interrupt flag
+	IEC1bits.U2TXIE = 0;         // enable UART Tx interrupt
+
+	IFS1bits.U2RXIF = 0;		 // clear interrupt flag of rx
+	IEC1bits.U2RXIE = 1;		 // enable rx recieved data
 }
 void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void)
 {
