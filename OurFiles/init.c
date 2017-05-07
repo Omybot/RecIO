@@ -27,10 +27,6 @@ void InitClk(void)
 void Init_Interrupt_Priority(void)
 {
 
-//	IPC0bits.IC1IP  = 6;			// Balise
-//	IPC1bits.IC2IP  = 6;			// Balise
-//	IPC5bits.IC7IP  = 6;			// Balise
-//	IPC4bits.CNIP 	= 6;			// Switch fin de course Ascenseur Arriere
 	IPC0bits.T1IP   = 4;	//5		// Timer 1 used by Ethernet (Default value = 2)
 	IPC1bits.T2IP   = 5;	//6		// Timer 2 used to generate PWM
 //	IPC2bits.T3IP   = 7;			// Interrupt UNUSED
@@ -41,8 +37,9 @@ void Init_Interrupt_Priority(void)
 	IPC14bits.QEI1IP = 7;			// Quad Encoder Interrupt
 	IPC18bits.QEI2IP = 7;			// Quad Encoder Interrupt
 	IPC15bits.DMA5IP = 6;			// DMA5 Interrupt
-
-	}
+	IPC0bits.IC1IP   = 6;			// Input Capture used by Capteur Couleur
+//	IPC0bits.IC2IP 	 = 7;
+}
 
 void InitPorts(void) 
 {	
@@ -86,32 +83,22 @@ void InitPorts(void)
 	TRISCbits.TRISC8=1; // CODEUR2A - Codeurs
 	TRISCbits.TRISC9=1; // CODEUR2B - Codeurs
 
-	//CNPU2bits.CN22PUE = 1; 	// Laser 1 pull up
-	//CNPU1bits.CN15PUE = 1; 	// Laser 1 pull up
-	//CNPU1bits.CN12PUE = 1; 	// Toptour pull up (old CNPU1bits.CN5PUE)
-//	CNPU1bits.CN7PUE = 1;	// Switch fin de course 
-//	CNPU1bits.CN8PUE = 1;	// Switch fin de course 
-
 	//Configuration des ports pour la liaison SPI avec le module Ethernet
 	RPOR9bits.RP19R   = 0b01000; // SCK1  		<==> RP19 RC3 
 	RPOR10bits.RP20R  = 0b00111; // SDO1		<==> RP20 RC4
 	RPINR20bits.SDI1R = 21     ; // SDI1 		<==> RP21 RC5
 	
+	// UART AX12/CDS
 	RPOR9bits.RP18R = 0b00011;		//TX RP18 U1TX
     RPINR18bits.U1RXR = 17;			//RX RP17 U1RXR
+	LATAbits.LATA3 = 1;	// 1 J'envoie et 0 je réceptionne	//Initialisation du sens de communication pour les AX12
     
+	// UART Lulu
 	RPOR8bits.RP16R = 0b00101;		//TX RP16 U2TX
     RPINR19bits.U2RXR = 3;			//RX RP3 U2RXR
-//    
-//	RPINR7bits.IC1R = 14;  	// Capteur effet hall
-//	RPINR7bits.IC2R = 8;  	// Capteur laser 1 (bas)
-//	RPINR10bits.IC7R = 11; 	// Capteur laser 2 (haut)
-
-	//Initialisation du sens de communication pour les AX12
-	LATAbits.LATA3 = 1;	// 1 J'envoie et 0 je réceptionne
 }
 
-/*
+
 void Init_Input_Capture(void)
 {
 	//Set Timer3 to Capture
@@ -127,35 +114,34 @@ void Init_Input_Capture(void)
 	
 	T3CONbits.TON = 1;		//Starts the timer
 
-	//Configurer le pin Out en RP
-	RPINR7bits.IC1R 	= 1;	//RP1
+	// Capteur de couleur OUT 
+
+	RPINR7bits.IC1R 	= 4;		//RP4
 
 	IC1CONbits.ICM		= 0;
 	IC1CONbits.ICSIDL 	= 1;
 	IC1CONbits.ICTMR	= 0;		//TM3
 	IC1CONbits.ICI		= 0b00;
 	IC1CONbits.ICM		= 0b101;		
-		
-//	IPC0bits.IC1IP = 7;
+
 	IFS0bits.IC1IF = 0;
 	IEC0bits.IC1IE = 1;
 	
-	// pour capteur vitesse
-	//Configurer la pin d'entree
-	RPINR7bits.IC2R 	= 8;	//RP8
-
-	IC2CONbits.ICM		= 0;
-	IC2CONbits.ICSIDL 	= 1;
-	IC2CONbits.ICTMR	= 0;		//TM3
-	IC2CONbits.ICI		= 0b00;
-	IC2CONbits.ICM		= 0b010;		
-		
-//	IPC0bits.IC2IP = 7;
-	IFS0bits.IC2IF = 0;
-	IEC0bits.IC2IE = 1;
+//	// pour capteur vitesse
+//	//Configurer la pin d'entree
+//	RPINR7bits.IC2R 	= 8;		//RP8
+//
+//	IC2CONbits.ICM		= 0;
+//	IC2CONbits.ICSIDL 	= 1;
+//	IC2CONbits.ICTMR	= 0;		//TM3
+//	IC2CONbits.ICI		= 0b00;
+//	IC2CONbits.ICM		= 0b010;		
+//		
+//	IFS0bits.IC2IF = 0;
+//	IEC0bits.IC2IE = 1;
 
 }
-*/
+
 
 void Init_Timer(void)
 {
@@ -186,7 +172,6 @@ void Init_Timer4(void)
 	TMR4 = 0; 				//Clear timer register
 	PR4  = 5000; 			//Load the period value (Pas)
 
-//	IPC6bits.T4IP = 6; 		//Set Timer4 Interrupt Priority Level
 	IFS1bits.T4IF = 0; 		//Clear Timer4 Interrupt Flag
 	IEC1bits.T4IE = 1; 		//Enable Timer4 interrupt
 	
@@ -351,13 +336,12 @@ void InitUART1(void)
 	U1STAbits.URXISEL = 0b00;	// interrupt flag bit is set when RXBUF is filled whith 1 character
 	U1STAbits.ADDEN = 0;		// address detect mode is disabled
 
-	IPC3bits.U1TXIP = 2;         // set UART Tx interrupt priority (modif by mouly)
+
 	IFS0bits.U1TXIF = 0;         // clear UART Tx interrupt flag
 	IEC0bits.U1TXIE = 0;         // enable UART Tx interrupt
 
 	IFS0bits.U1RXIF = 0;		 // clear interrupt flag of rx
-	IEC0bits.U1RXIE = 1;		 // enable rx recieved data (set to 0 by mouly)
-    IPC2bits.U1RXIP = 1;		 // Interrupt priority 2 (modif by mouly)
+	IEC0bits.U1RXIE = 1;		 // enable rx recieved data
 }
 
 void InitUART2(void)
@@ -445,58 +429,6 @@ void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void)
 		ADC_Results[6] /= SAMP_BUFF_SIZE;
 		ADC_Results[7] /= SAMP_BUFF_SIZE;
 		ADC_Results[8] /= SAMP_BUFF_SIZE;
-	}
-
-	telemetre[0] = ADC_Results[7];
-	telemetre[1] = ADC_Results[8];
-
-	if(ADC_Results[3]>LIMITATION_COURANT) // Sécurité courant ascenseur gauche
-	{
-		if(cpt_secu_courant[0]++>30)//30
-		{
-			if(pid_power[0] == ON)
-				securite_ascenseur=1;
-			Motors_Power(OFF,0);
-			pwm(ID_MOTEUR_ASCENSEUR_GAUCHE,0);
-		}
-	}
-	else
-		cpt_secu_courant[0]=0;
-	
-	if(ADC_Results[4]>LIMITATION_COURANT) // Sécurité courant ascenseur droite
-	{
-		if(cpt_secu_courant[1]++>30) //30
-		{
-			if(pid_power[1] == ON)
-				securite_ascenseur=2;
-			Motors_Power(OFF,1);
-			pwm(ID_MOTEUR_ASCENSEUR_DROITE,0);
-		}
-		
-	}
-	else
-		cpt_secu_courant[1]=0;			
-
-	for(i=0;i<2;i++)
-	{
-		if(hysteresis[i]>0)
-		{
-			if(telemetre[i]>(seuil[i]+hysteresis[i]))
-			{
-				hysteresis[i] = -hysteresis[i];
-				telem_front = 1;
-				telem = i+1;
-			}
-		}
-		else 
-		{
-			if(telemetre[i]<(seuil[i]+hysteresis[i]))
-			{
-				hysteresis[i] = -hysteresis[i];
-				telem_front = 0;
-				telem = i+1;
-			}			
-		}
 	}
 
 	DmaBuffer ^= 1;

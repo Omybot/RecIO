@@ -47,6 +47,9 @@ void Init_Timer (void);
 //Initialisation Alimentation
 void Init_Alimentation(void);
 
+// Capteur de couleur 
+unsigned int Send_Variable_Capteur_Couleur(void);
+Trame Couleur_Balle(void);
 
 Trame PiloteEcho(void);
 
@@ -288,7 +291,6 @@ void PiloteRecalageStepper(void);
 
 // Alimentation
 #define CMD_ALIMENTATION				0x80
-
 
 // Diagnostic
 #define	CMD_DEBUG						0xEE

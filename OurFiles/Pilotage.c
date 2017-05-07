@@ -9,27 +9,10 @@
 
 #define UART_BUFFER_SIZE 100
 
+//Extern Capteur Couleur
+extern unsigned int Tab_Capteur_Couleur[8];
+
 extern 	unsigned char flag_envoi_uart,buffer_envoi_uart[UART_BUFFER_SIZE],ptr_write_buffer_uart;
-
-
-extern unsigned char Demande_lidar;
-extern unsigned char Coo_SwitchBrasDroitHaut;
-extern unsigned char Coo_SwitchBrasDroitBas;
-extern unsigned char Coo_BarriereBrasDroit;
-extern unsigned char Coo_SwitchBrasGaucheHaut;
-extern unsigned char Coo_SwitchBrasGaucheBas;
-extern unsigned char Coo_BarriereBrasGauche;
-extern unsigned char Coo_SwitchOrigineBrasDroit;
-extern unsigned char Coo_SwitchOrigineBrasGauche;
-extern unsigned char Old_Coo_SwitchBrasDroitHaut;
-extern unsigned char Old_Coo_SwitchBrasDroitBas;
-extern unsigned char Old_Coo_BarriereBrasDroit;
-extern unsigned char Old_Coo_SwitchBrasGaucheHaut;
-extern unsigned char Old_Coo_SwitchBrasGaucheBas;
-extern unsigned char Old_Coo_BarriereBrasGauche;
-extern unsigned char Old_Coo_SwitchOrigineBrasDroit;
-extern unsigned char Old_Coo_SwitchOrigineBrasGauche;
-
 
 // ATTENTION /!\ Ces fonctions ne doivent pas être bloquantes
 extern unsigned char detection_pompe;
@@ -105,10 +88,27 @@ void delays(void)
     while(i--);
 }
 
+//Interruption Input Capture
+//Interruption induced on every 16th Rising Edge
+void __attribute__((__interrupt__,__auto_psv__)) _IC1Interrupt(void)
+{
+	unsigned int t1,t2;
+	t2=IC1BUF;
+	t1=IC1BUF;
+
+	IFS0bits.IC1IF=0;
+
+	if(t2>t1)
+		Valeur_Capteur_Couleur = t2-t1;
+	else
+		Valeur_Capteur_Couleur = (PR3 - t1) + t2;
+}
+
 // DEBUG
 
 Trame PiloteDebug0(Trame t)
 {
+	t = Couleur_Balle();
 	return t;
 }
 
@@ -307,94 +307,6 @@ void PiloteUARTSetBaudrateMicro(unsigned char newBaud)
 			break;
 	}	
 }
-/*
-//Function generates PWM through Timer 2 ISR, induced every 3.2us
-void __attribute__((__interrupt__,__auto_psv__)) _T2Interrupt(void)
-{
-	Cpt_Tmr_Periode++;			
-		
-	if(cpt_capteur_vitesse<8000) // 8000 car 8000*8 < 65536
-		cpt_capteur_vitesse++;
-
-	if(flag_capteur_vitesse)
-	{
-		desactive_interrupt=3; 	// Desactive l'interuption du captuer vitesse pendant 3 ms (protection anti rebonds)
-		flag_capteur_vitesse=0;	// ACK
-		capteur_vitesse=cpt_capteur_vitesse; // Stock la vitesse (période)
-		cpt_capteur_vitesse=0;	// Reinitialise le compteur soft
-	}
-	
-	//Gestion du signal pwm servomoteur
-	if(Cpt_Tmr_Periode == Periode_pince_droite_haute) 
-	{
-		SIGNAL_PINCE_DROITE_HAUTE = FALLING_EDGE;		
-	}
-		
-	if(Cpt_Tmr_Periode == Periode_pince_gauche_haute)
-	{
-		SIGNAL_PINCE_GAUCHE_HAUTE = FALLING_EDGE;		
-	}
-	if(Cpt_Tmr_Periode == Periode_pince_droite_basse) 
-	{
-		SIGNAL_PINCE_DROITE_BASSE = FALLING_EDGE;		
-	}
-		
-	if(Cpt_Tmr_Periode == Periode_pince_gauche_basse)
-	{
-		SIGNAL_PINCE_GAUCHE_BASSE = FALLING_EDGE;		
-	}
-	
-	if(Cpt_Tmr_Periode == Periode_cale)
-	{
-		SIGNAL_CALE = FALLING_EDGE;		
-	}
-	
-	if(Cpt_Tmr_Periode == CPT_PERIODE_20MS)
-	{
-		SIGNAL_PINCE_DROITE_HAUTE  = RISING_EDGE;
-		SIGNAL_PINCE_GAUCHE_HAUTE  = RISING_EDGE;
-		SIGNAL_PINCE_DROITE_BASSE  = RISING_EDGE;
-		SIGNAL_PINCE_GAUCHE_BASSE  = RISING_EDGE;
-		SIGNAL_CALE = RISING_EDGE;
-		
-		Cpt_Tmr_Periode = 0;
-		cpt_20mscourant++;
-	}	
-	
-	IFS0bits.T2IF = 0; 		//Clear Timer1 Interrupt flag
-}
-*/
-
-
-/*
-//Interruption Input Capture
-//Interruption induced on every 16th Rising Edge
-void __attribute__((__interrupt__,__auto_psv__)) _IC1Interrupt(void)
-{
-	unsigned int t1,t2;
-	t2=IC1BUF;
-	t1=IC1BUF;
-
-	IFS0bits.IC1IF=0;
-
-	if(t2>t1)
-		Valeur_Capteur_Couleur = t2-t1;
-	else
-		Valeur_Capteur_Couleur = (PR3 - t1) + t2;
-}
-*/
-
-/*
-//Interruption Input Capture
-//Interruption induced on every Falling Edge
-void __attribute__((__interrupt__,__auto_psv__)) _IC2Interrupt(void)
-{
-	IEC0bits.IC2IE = 0;
-	IFS0bits.IC2IF = 0;
-	flag_capteur_vitesse = 1;
-}
-
-*/
 
 Trame PiloteGotoXY(int x,int y, unsigned char x_negatif, unsigned char y_negatif)
 {
@@ -416,6 +328,50 @@ Trame PiloteGotoXY(int x,int y, unsigned char x_negatif, unsigned char y_negatif
 	
 	return trame;
 	
+}
+
+unsigned int Send_Variable_Capteur_Couleur(void){
+	return Valeur_Capteur_Couleur;		
+}
+
+Trame Couleur_Balle(void)
+{
+
+	Trame Couleur_Balle;
+	static BYTE Couleur[18];
+	Couleur_Balle.nbChar = 18;
+
+	Couleur[0] = 0xC1;
+	Couleur[1] = CMD_DEBUG; //CMD_REPONSE_COULEUR_BALLE
+
+	Couleur[2] = Tab_Capteur_Couleur[0]>>8;
+	Couleur[3] = Tab_Capteur_Couleur[0]&0x00FF;
+
+	Couleur[4] = Tab_Capteur_Couleur[1]>>8;
+	Couleur[5] = Tab_Capteur_Couleur[1]&0x00FF;
+
+	Couleur[6] = Tab_Capteur_Couleur[2]>>8;
+	Couleur[7] = Tab_Capteur_Couleur[2]&0x00FF;
+
+	Couleur[8] = Tab_Capteur_Couleur[3]>>8;
+	Couleur[9] = Tab_Capteur_Couleur[3]&0x00FF;
+
+	Couleur[10] = Tab_Capteur_Couleur[4]>>8;
+	Couleur[11] = Tab_Capteur_Couleur[4]&0x00FF;
+
+	Couleur[12] = Tab_Capteur_Couleur[5]>>8;
+	Couleur[13] = Tab_Capteur_Couleur[5]&0x00FF;
+
+	Couleur[14] = Tab_Capteur_Couleur[6]>>8;
+	Couleur[15] = Tab_Capteur_Couleur[6]&0x00FF;
+
+	Couleur[16] = Tab_Capteur_Couleur[7]>>8;
+	Couleur[17] = Tab_Capteur_Couleur[7]&0x00FF;
+
+	Couleur_Balle.message = Couleur;
+	
+	return Couleur_Balle;
+
 }
 
 Trame StatusMonitor(void)
@@ -1426,30 +1382,6 @@ Trame AnalyseTrame(Trame t)
 			// Interrupteur couleur Equipe
 			switch(t.message[2])
 			{
-				case ID_SWITCH_BRAS_DROIT_HAUT:
-					Old_Coo_SwitchBrasDroitHaut = !Coo_SwitchBrasDroitHaut;
-					break;
-				case ID_SWITCH_BRAS_DROIT_BAS:
-					Old_Coo_SwitchBrasDroitBas = !Coo_SwitchBrasDroitBas;
-					break;
-				case ID_BARRIERE_BRAS_DROIT:
-					Old_Coo_BarriereBrasDroit = !Coo_BarriereBrasDroit;
-					break;
-				case ID_SWITCH_BRAS_GAUCHE_HAUT:
-					Old_Coo_SwitchBrasGaucheHaut = !Coo_SwitchBrasGaucheHaut;
-					break;
-				case ID_SWITCH_BRAS_GAUCHE_BAS:
-					Old_Coo_SwitchBrasGaucheBas = !Coo_SwitchBrasGaucheBas;
-					break;
-				case ID_BARRIERE_BRAS_GAUCHE:
-					Old_Coo_BarriereBrasGauche = !Coo_BarriereBrasGauche;
-					break;
-				case ID_SWITCH_ORIGINE_BRAS_DROIT:
-					Old_Coo_SwitchOrigineBrasDroit = !Coo_SwitchOrigineBrasDroit;
-					break;
-				case ID_SWITCH_ORIGINE_BRAS_GAUCHE:
-					Old_Coo_SwitchOrigineBrasGauche = !Coo_SwitchOrigineBrasGauche;
-					break;
 				
 			}
 			break;
@@ -1774,7 +1706,6 @@ Trame AnalyseTrame(Trame t)
 				EnvoiUART(t);
 				break;
 			case CMD_DEMANDE_LIDAR:
-				Demande_lidar=1;
 				break;
 			
 	}
