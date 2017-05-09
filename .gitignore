@@ -1,0 +1,18 @@
+Makefile
+
+NMakefile
+
+*.cof
+
+*.hex
+
+*.map
+*.mcw
+*.map
+*.mcs
+*.mcs
+*.mptags
+*.tagsrc
+*.o
+
+Objects - RecRP
