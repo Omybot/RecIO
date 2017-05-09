@@ -36,6 +36,7 @@ int Coupure(void);
 
 //Uart
 void PiloteUARTSetBaudrateMicro(unsigned char newBaud);
+Trame PiloteEcho(void);
 
 // Constantes des fonctions des actionneurs
 #define ON  1
@@ -47,11 +48,18 @@ void Init_Timer (void);
 //Initialisation Alimentation
 void Init_Alimentation(void);
 
-// Capteur de couleur 
+// Capteur de couleur
+typedef struct Rgb
+{
+  unsigned char red;
+  unsigned char green;
+  unsigned char blue;
+}Rgb;
 unsigned int Send_Variable_Capteur_Couleur(void);
 Trame Couleur_Balle(void);
-
-Trame PiloteEcho(void);
+Trame CouleurRGB(int Id);
+double period2frequency(unsigned int period);
+Rgb frequency2RGB(double freqClear, double freqRed, double freqGreen, double freqBlue);
 
 //Delay
 void delay(void);
@@ -136,10 +144,14 @@ Trame AnalyseTrame(Trame t);
 //Stepper
 void PiloteRecalageStepper(void);
 
-//Define Servos
+// Capteur de couleur
+#define CMD_DEMANDE_CAPTEUR_COULEUR 	0x52
+#define CMD_REPONSE_CAPTEUR_COULEUR 	0x53
+
+// Define Servos
 #define CPT_PERIODE_20MS 6250
 #define RISING_EDGE 1
-#define FALLING_EDGE 0 
+#define FALLING_EDGE 0
 
 // Deplacements
 #define	CMD_AVANCER						0x01
@@ -171,7 +183,7 @@ void PiloteRecalageStepper(void);
 #define CMD_SERVOMOTEUR					0x60
 #define CMD_ENVOI_BAUDRATE_MICRO		0x61
 
-// Actionneurs 
+// Actionneurs
 #define CMD_ACTIONNEUR_ONOFF			0x65
 #define CMD_MOTEUR_POSITION				0x66
 #define CMD_VITESSE_MOTEUR				0x67
@@ -191,7 +203,7 @@ void PiloteRecalageStepper(void);
 #define ID_SWITCH_BRAS_GAUCHE_HAUT		0x03
 #define ID_SWITCH_BRAS_GAUCHE_BAS		0x04
 #define ID_BARRIERE_BRAS_GAUCHE			0x05
-#define ID_SWITCH_ORIGINE_BRAS_DROIT	0x06 
+#define ID_SWITCH_ORIGINE_BRAS_DROIT	0x06
 #define ID_SWITCH_ORIGINE_BRAS_GAUCHE	0x07
 #define CMD_DEMANDE_CAPTEUR				0x50
 #define CMD_REPONSE_CAPTEUR				0x51
@@ -280,7 +292,7 @@ void PiloteRecalageStepper(void);
 
 
 // Capteurs
-#define CMD_DEPART_JACK					0x71	
+#define CMD_DEPART_JACK					0x71
 #define CMD_DEMANDE_COULEUR_EQUIPE		0x72
 #define CMD_REPONSE_COULEUR_EQUIPE		0x73
 #define CMD_ARME_JACK					0x70
