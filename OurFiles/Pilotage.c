@@ -9,9 +9,14 @@
 
 #define UART_BUFFER_SIZE 100
 
-//Extern Capteur Couleur
+//Define Capteur Couleur
+#define LED LATAbits.LATA8
+#define S2 LATAbits.LATA10
+#define S3 LATAbits.LATA7 
+//	Extern Capteur Couleur
 extern unsigned int Tab_Capteur_Couleur[8];
 
+// UART
 extern 	unsigned char flag_envoi_uart,buffer_envoi_uart[UART_BUFFER_SIZE],ptr_write_buffer_uart;
 
 // ATTENTION /!\ Ces fonctions ne doivent pas être bloquantes
@@ -89,9 +94,9 @@ void delays(void)
 
 //Interruption Input Capture
 //Interruption induced on every 16th Rising Edge
-unsigned int t1,t2,t3,t4;
 void __attribute__((__interrupt__,__auto_psv__)) _IC1Interrupt(void)
 {
+	unsigned int t1,t2;
 	t1=IC1BUF;
 	t2=IC1BUF;
 
@@ -112,37 +117,33 @@ Trame PiloteDebug0(Trame t)
 
 Trame PiloteDebug1(Trame t)
 {
-	static BYTE IC1Buffer[12];
-	t.nbChar = 12;
-
-	IC1Buffer[0] = 0xC4;
-	IC1Buffer[1] = CMD_DEBUG; //CMD_REPONSE_COULEUR_BALLE
-
-	IC1Buffer[2] = t1>>8;
-	IC1Buffer[3] = t1&0x00FF;
-
-	IC1Buffer[4] = t2>>8;
-	IC1Buffer[5] = t2&0x00FF;
-
-	IC1Buffer[6] = t3>>8;
-	IC1Buffer[7] = t3&0x00FF;
-
-	IC1Buffer[8] = t4>>8;
-	IC1Buffer[9] = t4&0x00FF;
-
-	IC1Buffer[10] = Valeur_Capteur_Couleur>>8;
-	IC1Buffer[11] = Valeur_Capteur_Couleur&0x00FF;
-	t.message = IC1Buffer;
 	return t;
 }
 
 Trame PiloteDebug2(Trame t)
 {
+	static int nbChar = 5;
+	BYTE timePeriod[nbChar];
+	BYTE colorCtrl = t.message[3];
+
+	S2 = (colorCtrl & 0x04)>>2;
+	S3 = (colorCtrl & 0x02)>>1;
+	LED = colorCtrl & 0x01;
+	timePeriod[0] = 0xC4;
+	timePeriod[1] = CMD_DEBUG;
+	timePeriod[2] = 0x02;
+	timePeriod[3] = Valeur_Capteur_Couleur>>8;
+	timePeriod[4] = Valeur_Capteur_Couleur&0x00FF;
+	
+	t.nbChar  = nbChar;
+	t.message = timePeriod;
+
 	return t;
 }
 
 Trame PiloteDebug3(Trame t)
 {
+	
 	return t;
 }
 

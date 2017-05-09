@@ -138,7 +138,7 @@ void Init_Timer3(void)
 //	T3CONbits.TSIDL = 0;
 //	T3CONbits.TGATE = 0;
 //	T3CONbits.TCS	= 0;
-//	T3CONbits.TCKPS = 0b01; //Prescaler set to 1:8
+	T3CONbits.TCKPS = 0b01; //Prescaler set to 1:8
 
 	IFS0bits.T3IF = 0; 		//Clear Timer3 Interrupt Flag
 	IEC0bits.T3IE = 0; 		//Disable Timer3 interrupt	

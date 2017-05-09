@@ -131,7 +131,7 @@ int main(void)
 	Go(3000,0);
 	Go(1300,1);
 	Motors_Power(ON,0);
-	Motors_Power(ON,1);
+	Motors_Power(ON,1);		
 
 	for(i=0;i<SIZE_TRAME_INIT_SERVO;i++)
 	{
@@ -335,10 +335,10 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 //					LED = 0;
 				break;
 				case 5:
-					S3  = 0; 
-					S2  = 0;
-					LED = 1;
-					Tab_Capteur_Couleur[4] = Send_Variable_Capteur_Couleur();
+//					Tab_Capteur_Couleur[4] = Send_Variable_Capteur_Couleur();
+//					S3  = 0; 
+//					S2  = 0;
+//					LED = 1;
 				break;
 				case 6:
 //					Tab_Capteur_Couleur[5] = Send_Variable_Capteur_Couleur();
