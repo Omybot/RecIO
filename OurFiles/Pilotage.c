@@ -62,7 +62,6 @@ unsigned int Periode_pince_gauche_basse = 0;//INIT_PINCE;
 
 //Variable Capteur Couleur
 unsigned int Valeur_Capteur_Couleur = 24;
-unsigned int Old_IC1Buf = 0;
 
 unsigned int Cpt_Tmr_Periode = 0;
 
@@ -90,11 +89,11 @@ void delays(void)
 
 //Interruption Input Capture
 //Interruption induced on every 16th Rising Edge
+unsigned int t1,t2,t3,t4;
 void __attribute__((__interrupt__,__auto_psv__)) _IC1Interrupt(void)
 {
-	unsigned int t1,t2;
-	t2=IC1BUF;
 	t1=IC1BUF;
+	t2=IC1BUF;
 
 	IFS0bits.IC1IF=0;
 
@@ -105,7 +104,6 @@ void __attribute__((__interrupt__,__auto_psv__)) _IC1Interrupt(void)
 }
 
 // DEBUG
-
 Trame PiloteDebug0(Trame t)
 {
 	t = Couleur_Balle();
@@ -114,6 +112,27 @@ Trame PiloteDebug0(Trame t)
 
 Trame PiloteDebug1(Trame t)
 {
+	static BYTE IC1Buffer[12];
+	t.nbChar = 12;
+
+	IC1Buffer[0] = 0xC4;
+	IC1Buffer[1] = CMD_DEBUG; //CMD_REPONSE_COULEUR_BALLE
+
+	IC1Buffer[2] = t1>>8;
+	IC1Buffer[3] = t1&0x00FF;
+
+	IC1Buffer[4] = t2>>8;
+	IC1Buffer[5] = t2&0x00FF;
+
+	IC1Buffer[6] = t3>>8;
+	IC1Buffer[7] = t3&0x00FF;
+
+	IC1Buffer[8] = t4>>8;
+	IC1Buffer[9] = t4&0x00FF;
+
+	IC1Buffer[10] = Valeur_Capteur_Couleur>>8;
+	IC1Buffer[11] = Valeur_Capteur_Couleur&0x00FF;
+	t.message = IC1Buffer;
 	return t;
 }
 
@@ -167,7 +186,6 @@ void Init_Servos(void)
 //Initalisation Alimentation
 void Init_Alimentation(void)
 {
-	LATAbits.LATA3 = 1;
 }
 
 //Fonction qui renvoie sous forme de trame(UDP) la couleur de l'equipe
@@ -341,7 +359,7 @@ Trame Couleur_Balle(void)
 	static BYTE Couleur[18];
 	Couleur_Balle.nbChar = 18;
 
-	Couleur[0] = 0xC1;
+	Couleur[0] = 0xC4;
 	Couleur[1] = CMD_DEBUG; //CMD_REPONSE_COULEUR_BALLE
 
 	Couleur[2] = Tab_Capteur_Couleur[0]>>8;
@@ -640,8 +658,6 @@ Trame PiloteGetBuffPosition()
 
 void PiloteAlimentation(char onOff)
 {
-	TRISAbits.TRISA3 = 0;
-	LATAbits.LATA3 = onOff; 
 }
 
 int PiloteVitesse(int vitesse)
@@ -1252,7 +1268,7 @@ Trame AnalyseTrame(Trame t)
 	switch(t.message[1])
 	{
 		case CMD_DEBUG:
-			param1 = t.message[3];							// Numero
+			param1 = t.message[2];							// Numero
 			switch(param1)
 			{
 				case 0:

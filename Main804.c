@@ -124,7 +124,7 @@ int main(void)
 	Init_Interrupt_Priority();							
 	InitUART();	
 	Init_Servos();
-	
+	Init_Input_Capture();
 	InitADC();
 	InitDMA();
 	DelayMs(100); 
@@ -139,10 +139,9 @@ int main(void)
 		if(ptr_write_buffer_uart >= UART_BUFFER_SIZE)
 			ptr_write_buffer_uart=0;
 	}
-
+	
 	while(1)
   	{
-
 		if((ptr_write_buffer_uart != ptr_read_buffer_uart) && U2STAbits.TRMT != 0)
 		{
 			// Gestion envoi trame
@@ -312,52 +311,52 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 			switch(++etat_Capteur_Couleur){
 	
 				case 1:
-					Tab_Capteur_Couleur[0] = Send_Variable_Capteur_Couleur();
-					S3  = 0; 
-					S2  = 0;
-					LED = 0;
+//					Tab_Capteur_Couleur[0] = Send_Variable_Capteur_Couleur();
+//					S3  = 0; 
+//					S2  = 0;
+//					LED = 0;
 				break;
 				case 2:
-					Tab_Capteur_Couleur[1] = Send_Variable_Capteur_Couleur();
-					S3  = 1; 
-					S2  = 0;
-					LED = 0;
+//					Tab_Capteur_Couleur[1] = Send_Variable_Capteur_Couleur();
+//					S3  = 1; 
+//					S2  = 0;
+//					LED = 0;
 				break;
 				case 3:
-					Tab_Capteur_Couleur[2] = Send_Variable_Capteur_Couleur();
-					S3  = 0; 
-					S2  = 1;
-					LED = 0;
+//					Tab_Capteur_Couleur[2] = Send_Variable_Capteur_Couleur();
+//					S3  = 0; 
+//					S2  = 1;
+//					LED = 0;
 				break;
 				case 4:
-					Tab_Capteur_Couleur[3] = Send_Variable_Capteur_Couleur();
-					S3  = 1; 
-					S2  = 1;
-					LED = 0;
+//					Tab_Capteur_Couleur[3] = Send_Variable_Capteur_Couleur();
+//					S3  = 1; 
+//					S2  = 1;
+//					LED = 0;
 				break;
 				case 5:
-					Tab_Capteur_Couleur[4] = Send_Variable_Capteur_Couleur();
 					S3  = 0; 
 					S2  = 0;
 					LED = 1;
+					Tab_Capteur_Couleur[4] = Send_Variable_Capteur_Couleur();
 				break;
 				case 6:
-					Tab_Capteur_Couleur[5] = Send_Variable_Capteur_Couleur();
-					S3  = 1; 
-					S2  = 0;
-					LED = 1;
+//					Tab_Capteur_Couleur[5] = Send_Variable_Capteur_Couleur();
+//					S3  = 1; 
+//					S2  = 0;
+//					LED = 1;
 				break;
 				case 7:
-					Tab_Capteur_Couleur[6] = Send_Variable_Capteur_Couleur();
-					S3  = 0; 
-					S2  = 1;
-					LED = 1;
+//					Tab_Capteur_Couleur[6] = Send_Variable_Capteur_Couleur();
+//					S3  = 0; 
+//					S2  = 1;
+//					LED = 1;
 				break;
 				case 8:
-					Tab_Capteur_Couleur[7] = Send_Variable_Capteur_Couleur();
-					S3  = 1; 
-					S2  = 1;
-					LED = 1;
+//					Tab_Capteur_Couleur[7] = Send_Variable_Capteur_Couleur();
+//					S3  = 1; 
+//					S2  = 1;
+//					LED = 1;
 					etat_Capteur_Couleur = 0;
 				break;
 			}

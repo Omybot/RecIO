@@ -13,8 +13,9 @@ void InitQEI(void);
 
 void Init_Timer(void);
 void Init_Timer2(void);
-void Init_Timer5(void);
+void Init_Timer3(void);
 void Init_Timer4(void);
+void Init_Timer5(void);
 
 void InitADC(void);
 void InitDMA(void);

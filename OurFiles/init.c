@@ -29,7 +29,7 @@ void Init_Interrupt_Priority(void)
 
 	IPC0bits.T1IP   = 4;	//5		// Timer 1 used by Ethernet (Default value = 2)
 	IPC1bits.T2IP   = 5;	//6		// Timer 2 used to generate PWM
-//	IPC2bits.T3IP   = 7;			// Interrupt UNUSED
+	IPC2bits.T3IP   = 7;			// Timer 3 used by Input Capture (IC1)
 	IPC2bits.U1RXIP = 4;			// UART RX Interrupt
 	IPC3bits.U1TXIP = 4;			// UART TX Interrupt
 	IPC6bits.T4IP   = 3;			// Timer 4 Used by Asser
@@ -38,7 +38,6 @@ void Init_Interrupt_Priority(void)
 	IPC18bits.QEI2IP = 7;			// Quad Encoder Interrupt
 	IPC15bits.DMA5IP = 6;			// DMA5 Interrupt
 	IPC0bits.IC1IP   = 6;			// Input Capture used by Capteur Couleur
-//	IPC0bits.IC2IP 	 = 7;
 }
 
 void InitPorts(void) 
@@ -96,58 +95,31 @@ void InitPorts(void)
 	// UART Lulu
 	RPOR8bits.RP16R = 0b00101;		//TX RP16 U2TX
     RPINR19bits.U2RXR = 3;			//RX RP3 U2RXR
+
+	// Capteur de couleur OUT  
+	RPINR7bits.IC1R 	= 4;		//RP4
 }
 
 
 void Init_Input_Capture(void)
 {
-	//Set Timer3 to Capture
-	T3CONbits.TON 	= 0;	//Stops the timer
-	T3CONbits.TSIDL = 0;
-	T3CONbits.TGATE = 0;
-	T3CONbits.TCS	= 0;
-	T3CONbits.TCKPS = 0b10; //Prescaler set to 1:64
+	// Use Timer 3 for IC1
+	Init_Timer3();
 
-//	IPC2bits.T3IP = 7; 		//Set Timer3 Interrupt Priority Level
-//	IFS0bits.T3IF = 0; 		//Clear Timer3 Interrupt Flag
-	IEC0bits.T3IE = 0; 		//Disable Timer3 interrupt	
-	
-	T3CONbits.TON = 1;		//Starts the timer
-
-	// Capteur de couleur OUT 
-
-	RPINR7bits.IC1R 	= 4;		//RP4
-
-	IC1CONbits.ICM		= 0;
-	IC1CONbits.ICSIDL 	= 1;
-	IC1CONbits.ICTMR	= 0;		//TM3
-	IC1CONbits.ICI		= 0b00;
-	IC1CONbits.ICM		= 0b101;		
+	// Set IC1 to Capture
+	IC1CONbits.ICM		= 0;		// Disable Input Capture 1 Module
+	IC1CONbits.ICTMR	= 0;		// Select Timer 3 as the time base
+	IC1CONbits.ICI		= 0b01;		// Interrupt on every 2nd capture event
+	IC1CONbits.ICM		= 0b101;	// Capture mode, every 16th rising edge	
 
 	IFS0bits.IC1IF = 0;
 	IEC0bits.IC1IE = 1;
-	
-//	// pour capteur vitesse
-//	//Configurer la pin d'entree
-//	RPINR7bits.IC2R 	= 8;		//RP8
-//
-//	IC2CONbits.ICM		= 0;
-//	IC2CONbits.ICSIDL 	= 1;
-//	IC2CONbits.ICTMR	= 0;		//TM3
-//	IC2CONbits.ICI		= 0b00;
-//	IC2CONbits.ICM		= 0b010;		
-//		
-//	IFS0bits.IC2IF = 0;
-//	IEC0bits.IC2IE = 1;
-
 }
 
 
 void Init_Timer(void)
 {
-	Init_Timer2();
 	Init_Timer4();
-	Init_Timer5();
 }
 
 
@@ -158,6 +130,20 @@ void Init_Timer2(void)
 	IFS0bits.T2IF = 0;		// Interrupt flag cleared
 	IEC0bits.T2IE = 0;		// Interrupt disabled
 	T2CONbits.TON = 1;		// Timer enabled
+}
+
+void Init_Timer3(void)
+{
+//	T3CONbits.TON 	= 0;	//Stops the timer
+//	T3CONbits.TSIDL = 0;
+//	T3CONbits.TGATE = 0;
+//	T3CONbits.TCS	= 0;
+//	T3CONbits.TCKPS = 0b01; //Prescaler set to 1:8
+
+	IFS0bits.T3IF = 0; 		//Clear Timer3 Interrupt Flag
+	IEC0bits.T3IE = 0; 		//Disable Timer3 interrupt	
+	
+	T3CONbits.TON = 1;		//Starts the timer
 }
 
 void Init_Timer4(void)
@@ -190,7 +176,6 @@ void Init_Timer5(void)
 	TMR5 = 0; 				//Clear timer register
 	PR5  = 6000;     		//Load the period value (Pas) 
 
-//	IPC7bits.T5IP = 7; 		//Set Timer5 Interrupt Priority Level
 	IFS1bits.T5IF = 0; 		//Clear Timer5 Interrupt Flag
 	IEC1bits.T5IE = 1; 		//Enable Timer5 interrupt
 }
@@ -214,17 +199,16 @@ void InitPWM(void)
 	PWM2CON1bits.PEN1H = 0;		// PWM1H1 pin is disabled for PWM output
 	
 
-	DIR_ASCENSEUR_GAUCHE	= 0;
-	DIR_ASCENSEUR_DROITE	= 0;
-	LAT_ASCENSEUR_GAUCHE 	= 0;
-	LAT_ASCENSEUR_DROITE	= 0;
-	LAT_POMPE	= 0;
-
-	PWM_ASCENSEUR_GAUCHE	= 0xFFFF;				// 0x0000 = 100.00% Power
-	PWM_ASCENSEUR_DROITE	= 0xFFFF;				// 0xFFFF =   0.00% Power
-	PWM_BALISE				= 0xFFFF;
-	PWM_POMPE				= 0xFFFF;
-
+//	DIR_ASCENSEUR_GAUCHE	= 0;
+//	DIR_ASCENSEUR_DROITE	= 0;
+//	LAT_ASCENSEUR_GAUCHE 	= 0;
+//	LAT_ASCENSEUR_DROITE	= 0;
+//	LAT_POMPE	= 0;
+//
+//	PWM_ASCENSEUR_GAUCHE	= 0xFFFF;				// 0x0000 = 100.00% Power
+//	PWM_ASCENSEUR_DROITE	= 0xFFFF;				// 0xFFFF =   0.00% Power
+//	PWM_BALISE				= 0xFFFF;
+//	PWM_POMPE				= 0xFFFF;
 }
 
 void InitQEI(void)
@@ -336,7 +320,6 @@ void InitUART1(void)
 	U1STAbits.URXISEL = 0b00;	// interrupt flag bit is set when RXBUF is filled whith 1 character
 	U1STAbits.ADDEN = 0;		// address detect mode is disabled
 
-
 	IFS0bits.U1TXIF = 0;         // clear UART Tx interrupt flag
 	IEC0bits.U1TXIE = 0;         // enable UART Tx interrupt
 
@@ -373,6 +356,7 @@ void InitUART2(void)
 	IFS1bits.U2RXIF = 0;		 // clear interrupt flag of rx
 	IEC1bits.U2RXIE = 1;		 // enable rx recieved data
 }
+
 void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void)
 {
 	static int seuil[2]={2500,2500};
