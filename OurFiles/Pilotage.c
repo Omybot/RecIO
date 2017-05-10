@@ -394,13 +394,15 @@ Trame Couleur_Balle(void)
 
 Trame CouleurRGB(int Id)
 {
-	Trame Couleur;	
-	double freqClear,freqRed,freqGreen,freqBlue;	
 	Rgb RgbVal;
-	Couleur.message[0] = 0xC4;
-	Couleur.message[1] = CMD_REPONSE_CAPTEUR_COULEUR;
-	Couleur.message[2] = Id;
-	Couleur.nbChar = 6;
+	Trame RgbMessage;	
+	double freqClear,freqRed,freqGreen,freqBlue;	
+	static BYTE Couleur[6];
+	
+	RgbMessage.nbChar = 6;
+	Couleur[0] = 0xC4;
+	Couleur[1] = CMD_REPONSE_CAPTEUR_COULEUR;
+	Couleur[2] = Id;
 
 	freqClear = period2frequency(Tab_Capteur_Couleur[6]);
 	freqRed   = period2frequency(Tab_Capteur_Couleur[4]);
@@ -409,11 +411,12 @@ Trame CouleurRGB(int Id)
 
 	RgbVal = frequency2RGB(freqClear, freqRed, freqGreen, freqBlue);
 
-	Couleur.message[3] = RgbVal.red;
-	Couleur.message[4] = RgbVal.green;
-	Couleur.message[5] = RgbVal.blue;
+	Couleur[3] = RgbVal.red;
+	Couleur[4] = RgbVal.green;
+	Couleur[5] = RgbVal.blue;
 
-	return Couleur;
+	RgbMessage.message = Couleur;
+	return RgbMessage;
 }
 
 double period2frequency(unsigned int period)
