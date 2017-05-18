@@ -310,6 +310,6 @@ void PiloteRecalageStepper(void);
 #define	CMD_RESET_CARTE					0xF1
 #define CMD_DEMANDE_PRESENCE_JACK		0xF3
 #define CMD_REPONSE_PRESENCE_JACK		0xF4
-#define CMD_REPONSE_ECHO				0xF5
+#define CMD_REPONSE_ECHO				0xF0
 
 #endif // __PILOTAGE_H__
