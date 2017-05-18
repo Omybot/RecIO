@@ -15,4 +15,5 @@ NMakefile
 *.tagsrc
 *.o
 
-Objects - RecRP
+bin
+obj

@@ -1355,204 +1355,50 @@ Trame AnalyseTrame(Trame t)
 			}
 		break;
 
-		case CMD_AVANCER:
-			param1 = t.message[3] * 256 + t.message[4];		// Distance
-			if(t.message[2])								// Sens
-				PiloteAvancer(param1);
-			else
-				PiloteReculer(param1);
-		break;
-
-		case CMD_GOTOXY:
-			param1 = t.message[2] * 256 + t.message[3];		// X
-			param2 = t.message[4] * 256 + t.message[5];		// Y
-			param3 = t.message[6];							// X positif
-			param4 = t.message[7];							// Y positif
-			retour = PiloteGotoXY(param1,param2,(unsigned char)param3,(unsigned char)param4);
-		break;
-
-
-		case CMD_PIVOTER:
-			param1 = t.message[3] * 256 + t.message[4];		// Angle
-			param2 = t.message[2];							// Sens
-			PilotePivoter(param1, (Cote)param2);
-		break;
-
-		case CMD_VIRAGE:
-			param1 = t.message[4] * 256 + t.message[5];		// Rayon
-			param2 = t.message[6] * 256 + t.message[7];		// Angle
-			param3 = t.message[3];							// Direction
-			param4 = t.message[2];							// Sens
-			PiloteVirage((unsigned char)param4,(unsigned char)param3, (double)param1, (double)param2);
-		break;
-
-		case CMD_STOP:
-			param1 = t.message[2];							// StopMode
-			PiloteStop((unsigned char)param1);
-		break;
-
-		case CMD_VITESSE_PIVOT:
-			param1 = t.message[2] * 256 + t.message[3];		// Vitesse
-			Motors_SetSpeed_Pivot(param1);
-		break;
-
-		case CMD_VITESSE_LIGNE:
-			param1 = t.message[2] * 256 + t.message[3];		// Vitesse
-			Motors_SetSpeed_Ligne((double)param1);
-		break;
-
-		case CMD_ACCELERATION_PIVOT:
-			param1 = t.message[2] * 256 + t.message[3];		// Accélération
-			Motors_SetAcceleration_Pivot((double)param1);
-		break;
-
-		case CMD_ACCELERATION_LIGNE:
-			param1 = t.message[2] * 256 + t.message[3];		// Accélération
-			Motors_SetAcceleration_Ligne((double)param1);
-		break;
-
-		case CMD_VITESSE_MOTEUR:
-			param1 = t.message[2];							// Numero moteur (0: gauche 1: droite)
-			param2 = t.message[3] * 256 + t.message[4];		// Vitesse
-			Motors_SetSpeed((double)param2,(unsigned char)param1);
-		break;
-
-		case CMD_ACCELERATION_MOTEUR:
-			param1 = t.message[2];							// Numero moteur (0: gauche 1: droite)
-			param2 = t.message[3] * 256 + t.message[4];		// Accel
-			Motors_SetAcceleration((double)param2,(unsigned char)param1);
-		break;
-
-
-		case CMD_ENVOI_PID:
-			param1 = t.message[2]*256+t.message[3];			// P
-			param2 = t.message[4]*256+t.message[5];			// I
-			param3 = t.message[6]*256+t.message[7];			// D
-			PilotePIDCoeffs(param1,param2,param3);
-		break;
-
 		case CMD_DEMANDE_ECHO:
 			retour = PiloteEcho();
-		break;
-
-		case CMD_ALIMENTATION:
-			// Commande alimentation
-			param1 = !t.message[2];							// On ou Off
-			PiloteAlimentation(param1);
-		break;
-
-		case CMD_DEMANDE_COULEUR_EQUIPE:
-			// Interrupteur couleur Equipe
-			retour = Couleur_Equipe();
 			break;
-		case CMD_DEMANDE_CAPTEUR_ONOFF:
-			// Interrupteur couleur Equipe
-			switch(t.message[2])
-			{
 
+		case CMD_VITESSE_MOTEUR:
+			param1 = t.message[3] * 256 + t.message[4];
+			switch (t.message[2])
+			{
+				case 1: // Moteur 1
+					pwm(MOTEUR_1,(double)((int)param1));			
+					break;
+				case 2: // Moteur 2
+					pwm(MOTEUR_2,(double)((int)param1));			
+					break;
+				case 3: // Moteur 3
+					pwm(MOTEUR_3,(double)((int)param1));			
+					break;
+				case 4: // Moteur 4
+					pwm(MOTEUR_4,(double)((int)param1));			
+					break;
 			}
 			break;
 
-		case CMD_DEMANDE_CAPTEUR:
-			// Interrupteur couleur Equipe
-			switch(t.message[2])
-			{
-				case ID_CAPTEUR_BALISE:
-
-				break;
-			}
-
-		case CMD_OFFSETASSERV:
-
-			param1 = t.message[2]*256+t.message[3];			// X
-			param2 = t.message[4]*256+t.message[5];			// Y
-			param3 = t.message[6]*256+t.message[7];			// TETA
-			PiloteOffsetAsserv(param1,param2,param3);
-
-		break;
-
-		case CMD_DEMANDEPOSITION: // Demande POS X Y TETA
-			retour = PilotePositionXYT();
-		break;
-
-		case CMD_RESET_CARTE:
-			Reset();
-		break;
-		case CMD_ARME_JACK:
-			jackAvant=1;
-		break;
-		case CMD_DEMANDE_PRESENCE_JACK:
-			return Presence_Jack();
-		break;
-		case CMD_CONSIGNE_POSITION:
-			if(t.message[2] == AVANT)
-			{
-				cons_pos[0] += MM_SCALER * (t.message[3] * 256 + t.message[4]);
-				cons_pos[1] += MM_SCALER * (t.message[3] * 256 + t.message[4]);
-			}
-			else
-			{
-				cons_pos[0] -= MM_SCALER * (t.message[3] * 256 + t.message[4]);
-				cons_pos[1] -= MM_SCALER * (t.message[3] * 256 + t.message[4]);
-			}
-			break;
-		case CMD_DEMANDE_BUFF_POSITION:
-			return PiloteGetBuffPosition();
-			break;
-		case CMD_DEMANDE_BUFF_STATUS:
-			return StatusMonitor();
+		case CMD_ACCELERATION_MOTEUR:
 			break;
 
 		case CMD_MOTEUR_POSITION:
-			switch (t.message[2])
-			{
-				case ID_MOTEUR_ASCENSEUR_GAUCHE:
-					param1 = t.message[3] * 256 + t.message[4];
-					if(param1 != 0)
-					{
-						Motors_Power(ON,0);
-						Go((double)param1,0);
-					}
-					else
-						Motors_Power(OFF,0);
-					break;
-				case ID_MOTEUR_ASCENSEUR_DROITE:
-					param1 = t.message[3] * 256 + t.message[4];
-					if(param1 != 0)
-					{
-						Motors_Power(ON,1);
-						Go((double)param1,1);
-					}
-					else
-						Motors_Power(OFF,1);
-					break;
-				case ID_MOTEUR_BALISE:
-					param1 = t.message[3] * 256 + t.message[4];
-					pwm(ID_MOTEUR_BALISE,(double)param1);
-					break;
-			}
 			break;
 
 
 		case CMD_ENVOI_BAUDRATE_MICRO:
 			param1 = t.message[2];
 			PiloteUARTSetBaudrateMicro(param1);
-		break;
+			break;
 
 		case CMD_DEMANDE_VALEURS_ANALOGIQUES:
 			return Retour_Valeurs_Analogiques();
-		break;
+			break;
 
 		case CMD_ACTIONNEUR_ONOFF:
 			switch (t.message[2])
 			{
-
 			}
 			break;
-
-		case CMD_DEMANDE_CALIBRATION_ASCENSEUR_AMPOULE:
-			PiloteRecalageStepper();
-		break;
 
 		case CMD_SERVOMOTEUR:
 
@@ -1772,8 +1618,7 @@ Trame AnalyseTrame(Trame t)
 		case CMD_ENVOI_UART:
 			EnvoiUART(t);
 			break;
-		case CMD_DEMANDE_LIDAR:
-			break;
+
 		case CMD_DEMANDE_CAPTEUR_COULEUR:
       		retour = CouleurRGB(t.message[2]);
 			break;

@@ -102,10 +102,6 @@ int main(void)
 	Init_Timer();	// Initialisation Timer2,Timer4 & Timer5
 	InitQEI(); 		// Initialisation des entrées en quadrature
 	InitPWM();		// Configuration du module PWM 
-	InitProp();
-	
-	Motors_Power(OFF,0);
-	Motors_Power(OFF,1);
 
 	// Initialize stack-related hardware components that may be 
 	// required by the UART configuration routines
@@ -127,11 +123,8 @@ int main(void)
 	Init_Input_Capture();
 	InitADC();
 	InitDMA();
+
 	DelayMs(100); 
-	Go(3000,0);
-	Go(1300,1);
-	Motors_Power(ON,0);
-	Motors_Power(ON,1);		
 
 	for(i=0;i<SIZE_TRAME_INIT_SERVO;i++)
 	{

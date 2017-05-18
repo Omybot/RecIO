@@ -98,6 +98,16 @@ void InitPorts(void)
 
 	// Capteur de couleur OUT  
 	RPINR7bits.IC1R 	= 4;		//RP4
+
+	// Initialisation des pins pwms
+	MOT1L = 0;
+	MOT1H = 0;
+	MOT2L = 0;
+	MOT2H = 0;
+	MOT3L = 0;
+	MOT3H = 0;
+	MOT4L = 0;
+	MOT4H = 0;
 }
 
 
@@ -183,32 +193,32 @@ void Init_Timer5(void)
 void InitPWM(void)
 {
 	PWM1CON2bits.OSYNC = 1;
+	// Attention Omybot's touch :
+	// MOT1 est géré par  PWM2 paire 1 => Hacheur n°1 (IC2)
+	// MOT2 est géré par  PWM1 paire 3 => Hacheur n°1 (IC2)
+	// MOT3 est géré par  PWM1 paire 2 => Hacheur n°2 (IC3)
+	// MOT4 est géré par  PWM1 paire 1 => Hacheur n°2 (IC3)
+	// 
+
 	P1TCONbits.PTEN = 1; 		// PWM Time base is On
-	P1TPER = 2000 - 1; 			// 20kHz PWM (2000 counts @40MIPS)
-	PWM1CON1bits.PEN1L = 1;		// PWM1L1 pin is enabled for PWM output
+	P1TPER = 4000 - 1; 			// 10kHz PWM (4000 counts @40MIPS)
+	PWM1CON1bits.PEN1L = 0;		// PWM1L1 pin is disabled for PWM output
 	PWM1CON1bits.PEN1H = 0;		// PWM1H1 pin is disabled for PWM output
-	PWM1CON1bits.PEN2L = 1;		// PWM1L2 pin is enabled for PWM output
+	PWM1CON1bits.PEN2L = 0;		// PWM1L2 pin is disabled for PWM output
 	PWM1CON1bits.PEN2H = 0;		// PWM1H2 pin is disabled for PWM output
 	PWM1CON1bits.PEN3L = 0;		// PWM1L3 pin is disabled for PWM output
-	PWM1CON1bits.PEN3H = 1;		// PWM1H3 pin is enabled for PWM output
-	
-	PWM2CON2bits.OSYNC = 1;
-	P2TCONbits.PTEN = 1; 		// PWM Time base is On
-	P2TPER = 2000 - 1; 			// 20kHz PWM (2000 counts @40MIPS)
-	PWM2CON1bits.PEN1L = 1;		// PWM1L1 pin is enabled for PWM output
-	PWM2CON1bits.PEN1H = 0;		// PWM1H1 pin is disabled for PWM output
-	
+	PWM1CON1bits.PEN3H = 0;		// PWM1H3 pin is disabled for PWM output
 
-//	DIR_ASCENSEUR_GAUCHE	= 0;
-//	DIR_ASCENSEUR_DROITE	= 0;
-//	LAT_ASCENSEUR_GAUCHE 	= 0;
-//	LAT_ASCENSEUR_DROITE	= 0;
-//	LAT_POMPE	= 0;
-//
-//	PWM_ASCENSEUR_GAUCHE	= 0xFFFF;				// 0x0000 = 100.00% Power
-//	PWM_ASCENSEUR_DROITE	= 0xFFFF;				// 0xFFFF =   0.00% Power
-//	PWM_BALISE				= 0xFFFF;
-//	PWM_POMPE				= 0xFFFF;
+	P1DC1 = 0; // 0		==> PWM 0%
+	P1DC2 = 0; // 4000	==> PWM 50%
+	P1DC3 = 0; // 8000	==> PWM 100%
+
+	P2TCONbits.PTEN = 1; 		// PWM Time base is On
+	P2TPER = 4000 - 1; 			// 10kHz PWM (4000 counts @40MIPS)
+	PWM2CON1bits.PEN1L = 0;		// PWM2L1 pin is disabled for PWM output
+	PWM2CON1bits.PEN1H = 0;		// PWM2L2 pin is disabled for PWM output
+
+	P2DC1 = 0;
 }
 
 void InitQEI(void)

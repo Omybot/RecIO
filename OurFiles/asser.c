@@ -2,15 +2,15 @@
 #include "asser.h"
 #include <math.h>
 
-#define MOYENNE_GLISSANTE_CORRECTEUR 10
 
-extern unsigned int ADC_Results[9];
-unsigned int position_ascenseur_gauche=0,position_ascenseur_droite=0;
+#define MOYENNE_GLISSANTE_CORRECTEUR 3
 
-static double speed[N]={0},accel[N];
+unsigned char fin;
+unsigned int pwet;
+static double speed[N]={0},accel_def_debut[N],accel_def_fin[N];
 double cor_moy[N][MOYENNE_GLISSANTE_CORRECTEUR];
 unsigned char cpt_sature[N],bridage=0,ptr_cor_moy[N];	
-unsigned char flag_ligne,blocage[N];
+unsigned char flag_ligne;
 unsigned int saturation_pos[N]={0},saturation_neg[N]={0};
 unsigned char first[N];
 double kp[N],ki[N],kd[N];
@@ -19,7 +19,7 @@ unsigned char kd_cancel;
 unsigned int pid_count;
 double cons_pos[N]={0};
 long raw_position[N];
-long buff_position[N][2]; //256
+long buff_position[N][10];//[256]; gain de place traj. courbe
 unsigned char buff_position_ptr=0,last_send_ptr=0;
 unsigned char buff_status_ptr=0,last_send_status_ptr=0;
 unsigned int buff_status[3][64];
@@ -37,7 +37,23 @@ double ratio;
 unsigned char moteur1, moteur2,motiontype=0; // motiontype : 0: Avance 1: Pivot 2: Virage 3: Calage
 unsigned char cpt_calage[N];
 
+//Variables pour trajectoires courbes
+unsigned int positions_xy[2][300];
+unsigned int nbr_points,index_position_xy;
+double distance_restante;
+
+double kp_cap=0,ki_cap=0,kd_cap=0;
+double kp_vit=0,ki_vit=0,kd_vit=0;
+
+double targ_cap,cons_x,cons_y;
+double cons_pos_lin,cons_vit_lin,real_pos_lin,real_vit_lin;
+double cons_pos_ang,cons_vit_ang,real_pos_ang,real_vit_ang;
+double cons_vit,vitesse;
+
+unsigned char polaire=0;
+
 double etape_pos[5];
+unsigned char nbr_etapes,num_etape;
 
 
 double speed_def[N]={DEFAULT_SPEED};
@@ -46,8 +62,10 @@ double speed_def_ligne=DEFAULT_SPEED;
 double speed_def_pivot=DEFAULT_SPEED;
 double accel_def_ligne=DEFAULT_ACCEL;
 double accel_def_pivot=DEFAULT_ACCEL;
+double accel_def_ligne_debut=DEFAULT_ACCEL;
+double accel_def_ligne_fin=DEFAULT_ACCEL;
 
-unsigned char pid_power[2]={0,0},motion[N]={0},flagdefinehome;
+unsigned char pid_power=0,motion[N]={0},flagdefinehome;
 
 /*************************** Couche utilisateur ***************************/
 
@@ -60,8 +78,7 @@ void manual_pid(double moteurga, double moteurdr)
 void InitProp(void)
 {
 	double coeffs[N*3]={DEFAULT_KP,DEFAULT_KI,DEFAULT_KD,DEFAULT_KP,DEFAULT_KI,DEFAULT_KD};
-	Motors_Power(OFF,0);
-	Motors_Power(OFF,1);
+	Motors_Power(OFF);
 	set_pid(coeffs);
 	Motors_DefineHome(MOTEUR_GAUCHE);
 	Motors_DefineHome(MOTEUR_DROIT);
@@ -73,11 +90,22 @@ void InitProp(void)
 	speed_def_ligne = DEFAULT_SPEED;
 	accel_def_pivot = DEFAULT_ACCEL;
 	speed_def_pivot = DEFAULT_SPEED;
+	accel_def_ligne_debut 	= DEFAULT_ACCEL;
+	accel_def_ligne_fin 	= DEFAULT_ACCEL;
 	pos_x=0;
 	pos_y=0;
 	pos_teta=0;
-	Motors_Power(ON,0);
-	Motors_Power(ON,1);
+	Motors_Power(ON);
+}
+
+void Deplacement_Polaire()
+{
+	index_position_xy=1;
+	cons_vit=0;
+	fin=0;
+	polaire=1;
+	cons_pos_lin = real_pos_lin;
+	cons_pos_ang = real_pos_ang;
 }
 
 void Avance(double distance, unsigned char wait)
@@ -101,19 +129,7 @@ void Avance(double distance, unsigned char wait)
 	if(wait) 
 	{
 		while(Motors_IsRunning(MOTEUR_GAUCHE) || Motors_IsRunning(MOTEUR_DROIT));
-		Sleepms(100);
 	}
-}
-
-void Go(double distance, unsigned char moteur)
-{
-	flag_ligne=1;
-	first[moteur]=1;
-	motiontype = 0; // Avance
-	//Motors_SetAcceleration(accel_def_ligne, moteur);
-	//Motors_SetSpeed(speed_def_ligne, moteur);
-	Motors_SetPosition(distance, moteur);
-	Motors_Start(moteur);
 
 }
 
@@ -191,7 +207,6 @@ void Pivot(double angle,unsigned char wait)
 	if(wait) 
 	{
 		while(Motors_IsRunning(MOTEUR_GAUCHE) || Motors_IsRunning(MOTEUR_DROIT));
-		Sleepms(100);
 	}
 }
 
@@ -232,10 +247,7 @@ double Stop(unsigned char stopmode)
 {
 	Motors_Stop(stopmode,MOTEUR_GAUCHE);
 	Motors_Stop(stopmode,MOTEUR_DROIT);
-
-	while(Motors_IsRunning(MOTEUR_GAUCHE) || Motors_IsRunning(MOTEUR_DROIT));
-
-	return fabs((targ_pos[0]-real_pos[0]+targ_pos[1]-real_pos[1])/2);
+	return 1;
 }
 
 
@@ -261,38 +273,58 @@ void Motors_DefineHome(unsigned char moteur)
 
 void Motors_Stop(unsigned char stopmode, unsigned char moteur)
 {
-	switch(stopmode)
+	unsigned char stopmode_used;
+	stopmode_used = stopmode;
+	if(stopmode == SMOOTH && pid_power == 0) // Derogation, on force un dual abrupt dans ce cas la
+	{
+		stopmode_used = ABRUPT;
+		speed[0]  = 0;
+		accel_def_debut[0]  = 0;
+		accel_def_fin[0]  = 0;
+		speed[1]  = 0;
+		accel_def_debut[1]  = 0;
+		accel_def_fin[1]  = 0;
+		motion[0] = 0;
+		motion[1] = 0;
+		cons_pos[0] = real_pos[0];  
+		targ_pos[0] = real_pos[0];  
+		cons_pos[1] = real_pos[1];  
+		targ_pos[1] = real_pos[1]; 
+	}
+
+	switch(stopmode_used)
 	{
 		case FREELY :	cons_pos[moteur] = real_pos[moteur]; // Commande stop FREELY
 						targ_pos[moteur] = real_pos[moteur]; // Commande stop FREELY
 						motion[moteur] = 0;
-						pid_power[moteur] = 0;
-						pwm(moteur,0); // attention
+						pid_power = 0;
+						pwm(moteur,0);
 						break;
 		case SMOOTH :	cons_pos[moteur] = real_pos[moteur]; // Commande stop SMOOTH
 						targ_pos[moteur] = real_pos[moteur]; // Commande stop SMOOTH
-						motion[moteur] = 30;
-						pid_power[moteur] = 1;
+						if(motion[moteur]!=0) motion[moteur] = 30;
+						pid_power = 1;
 						break;
 		case ABRUPT :	cons_pos[moteur] = real_pos[moteur]; // Commande stop ABRUPT
 						targ_pos[moteur] = real_pos[moteur]; // Commande stop ABRUPT
 						motion[moteur] = 0;
-						pid_power[moteur] = 1;
+						pid_power = 1;						
 						break;
 		default :		break;
 	}
+	polaire=0;
 }
 
 unsigned char Motors_IsRunning(unsigned char moteur)
 {
-	if((motion[0] == 0) && (motion[1] == 0))	return 0;//FALSE;
-	else										return 1;//TRUE;
+	if((motion[0] == 0) && (motion[1] == 0))	return FALSE;
+	else										return TRUE;
 }	
 
 void Motors_SetPosition(double position, unsigned char moteur)
 {
-	targ_pos[moteur] = position*MM_SCALER;
-	//targ_pos[moteur] += cons_pos[moteur];
+	targ_pos[moteur] = position;
+	targ_pos[moteur] += cons_pos[moteur];
 }	
 
 void Motors_SetAcceleration(double acceleration, unsigned char moteur)
@@ -302,18 +334,7 @@ void Motors_SetAcceleration(double acceleration, unsigned char moteur)
 
 void Motors_SetSpeed(double vitesse, unsigned char moteur)
 {
-	switch(moteur)
-	{
-		case ID_MOTEUR_ASCENSEUR_GAUCHE:
-		case ID_MOTEUR_ASCENSEUR_DROITE: 
-			pwm(moteur, vitesse-4000);
-			
-			//speed_def[moteur] = vitesse;
-			break;
-		case ID_MOTEUR_POMPE: 
-			pwm(ID_MOTEUR_POMPE, vitesse);
-			break;
-	}
+	speed_def[moteur] = vitesse;
 }	
 
 void Motors_SetAcceleration_Pivot(double acceleration)
@@ -326,9 +347,10 @@ void Motors_SetSpeed_Pivot(double vitesse)
 	speed_def_pivot = vitesse;
 }	
 
-void Motors_SetAcceleration_Ligne(double acceleration)
+void Motors_SetAcceleration_Ligne(double acceleration_debut, double acceleration_fin)
 {
-	accel_def_ligne = acceleration;
+	accel_def_ligne_debut	= acceleration_debut;
+	accel_def_ligne_fin 	= acceleration_fin;
 }	
 
 void Motors_SetSpeed_Ligne(double vitesse)
@@ -336,20 +358,19 @@ void Motors_SetSpeed_Ligne(double vitesse)
 	speed_def_ligne = vitesse;
 }	
 
-
-void Motors_Power(unsigned char power, unsigned char moteur)
+void Motors_Power(unsigned char power)
 {
-	pid_power[moteur] = power;
-	pwm(moteur,0);
-	if(pid_power[moteur] == ON)
-		cons_pos[moteur] = real_pos[moteur];
+	pid_power = power;
+	if(pid_power == ON)
+	{
+		cons_pos[0] = real_pos[0];
+		cons_pos[1] = real_pos[1];
+	}
 }
-
-
 
 void Motors_Start(unsigned char moteur)
 {
-	motion[moteur] = 1;
+	motion[moteur] = MOTION_START;
 }
 
 /*************************** Couche basse ***************************/
@@ -361,123 +382,285 @@ unsigned char Motors_Task(void)
 	static unsigned char sens[N];
 	static double decel_point[N],origi_point[N];
 	static double speed_max[N],accel_max[N];
-	double delta_x, delta_y, lcurvi, vitesse;
-	static double lcurvi_old,distance_restante;
+	double delta_x, delta_y, lcurvi,distance2_pt_avant,distance2_pt_apres;
+	static double pos_teta_old,lcurvi_old,distance_restante,distance_freinage;
+	static double angle_restante,angle_freinage;
+	double targ_pos_x,targ_pos_y;
 	unsigned char retour = 0;
 	static unsigned char cpt_blocage[N] = {0};
+	double vitesse_odo;
 
-	/*lcurvi   = (real_pos[1] + real_pos[0])/2;
-	vitesse  = lcurvi - lcurvi_old;
+	lcurvi   = (real_pos[1] + real_pos[0])/2;
+	vitesse_odo  = lcurvi - lcurvi_old;
 	pos_teta = (real_pos[1] - real_pos[0]) / (VOIE) + offset_teta;
 	while(pos_teta >  PI) pos_teta -= 2*PI;
 	while(pos_teta < -PI) pos_teta += 2*PI;
-	delta_x  = -vitesse * sinf(pos_teta);
-	delta_y  =  vitesse * cosf(pos_teta);
+	delta_x  = -vitesse_odo * sin(pos_teta); // bug à revoir... sinf ==> float / sin ==> double
+	delta_y  =  vitesse_odo * cos(pos_teta);
 	pos_x   += delta_x;
 	pos_y   += delta_y;
-	lcurvi_old = lcurvi;*/
+	lcurvi_old = lcurvi;
 	
+	real_vit_lin = 1000*vitesse_odo;
+	real_vit_ang = 1000*(pos_teta - pos_teta_old);
+	real_pos_lin = lcurvi;
+	real_pos_ang = pos_teta;
+	pos_teta_old = pos_teta;
 	
-	pid(1,cons_pos,real_pos);
-	/*if(pid(1,cons_pos,real_pos)==1) // 150µs Max retourne 1 en cas de saturation hacheur
-	{
-		Stop(FREELY);
-		retour = FLAG_BLOCAGE;
-		return retour;
-	}*/
-	
-	
-	for(i=0;i<N;i++) 
-	{
-		if(motion[i]!=MOTION_STOP) // vitesse,position,accel 
+	if(polaire)
+	{	
+		if(pid(1,cons_pos,real_pos)==1) // 150µs Max retourne 1 en cas de saturation hacheur
 		{
-			/*if(flag_ligne)
+			Stop(FREELY);
+			retour = FLAG_BLOCAGE;
+			return retour;
+		}
+
+		//speed_def[i] = speed_def_ligne;
+		//accel_def_debut[i] = accel_def_ligne_debut;
+		//accel_def_fin[i] = accel_def_ligne_fin;
+
+		pwet=index_position_xy+30;
+		if(pwet>=nbr_points) pwet=nbr_points-1;
+		
+		cons_y = -((double)(positions_xy[0][pwet]/10.0));
+		cons_x = -((double)(positions_xy[1][pwet]/10.0));	
+		
+		// calcul de la trajectoire restante vol d'oiseau
+		targ_pos_y = -((double)(positions_xy[0][nbr_points]))/10.0;
+		targ_pos_x = -((double)(positions_xy[1][nbr_points]))/10.0;
+		distance_restante = pow(targ_pos_x-pos_x,2) + pow(targ_pos_y-pos_y,2); // calcul du carré de la distance restante
+		distance_freinage = pow(pow(cons_vit_lin,2)/(2*accel_def_ligne_fin),2); // calcul du carré de la distance de freinage
+		
+		if(fin==1)
+		{
+			cons_vit_lin -= accel_def_ligne_fin * 0.001;// Deccel
+			if(cons_vit_lin<0) cons_vit_lin=0;
+			cons_pos_lin -= cons_vit_lin * 0.001;
+			if(fabs(cons_vit_lin)<1)
 			{
-				speed_def[i] = speed_def_ligne;
-				accel_def[i] = accel_def_ligne;
+				polaire = 0;
+				motion[0] = 0;
+				motion[1] = 0;
+				retour = FLAG_ENVOI; 	
+				cons_pos[0] = real_pos[0];
+				cons_pos[1] = real_pos[1];
 			}
+		}
+		else if((distance_restante<distance_freinage)) // Si restante < freinage alors il faut freiner
+		{	// Deccel
+			cons_vit_lin -= accel_def_ligne_fin * 0.001;// Deccel
+			if(cons_vit_lin<0) cons_vit_lin=0;
+			cons_pos_lin -= cons_vit_lin * 0.001;
+		}
+		else if(fabs(cons_vit_lin) > speed_def_ligne)
+		{	// Deccel
+			cons_vit_lin -= accel_def_ligne_fin * 0.001;// Deccel
+			if(cons_vit_lin<0) cons_vit_lin=0;
+			cons_pos_lin -= cons_vit_lin * 0.001;
+		}
+		else if(fabs(cons_vit_lin) < speed_def_ligne) // Sinon il faut accélérer
+		{	// Accel
+			cons_vit_lin += accel_def_ligne_debut * 0.001;// Accel
+			cons_pos_lin -= cons_vit_lin * 0.001;
+		}
+		else	// vitesse croisière
+		{
+			cons_pos_lin -= cons_vit_lin * 0.001;
+		}
+
+		
+		
+		/*angle_restante = fabs(targ_cap);//-pos_teta); 
+		angle_freinage = pow(real_vit_ang*VOIE/2,2)/(2*accel_def_pivot);
+		
+		if((angle_restante<angle_freinage) || (real_vit_ang > speed_def_pivot)) // Si restante < freinage OU on a vitmax alors il faut freiner
+		{	// Deccel
+			cons_vit_ang -= accel_def_pivot * 0.001;// Deccel
+			if(cons_vit_ang < 0) 
+				cons_vit_ang = 0;
+			if(targ_cap>pos_teta)
+				cons_pos_ang += cons_vit_ang * 0.001;
 			else
+				cons_pos_ang -= cons_vit_ang * 0.001;
+		}
+		else // Sinon il faut accélérer
+		{	// Accel
+			cons_vit_ang += accel_def_pivot * 0.001;// Accel
+			if(cons_vit_ang > speed_def_pivot) 
+				cons_vit_ang = speed_def_pivot;
+			if(targ_cap>pos_teta)
+				cons_pos_ang += cons_vit_ang * 0.001;
+			else
+				cons_pos_ang -= cons_vit_ang * 0.001;
+		}
+
+		*/
+		
+		// calcul distance entre point actuelle et le point d'après
+		// calcul distance entre point actuelle et le point d'avant
+		// comparaison
+		distance2_pt_avant = pow(-((double)(positions_xy[1][index_position_xy-1]))/10 - pos_x,2) + pow(-((double)(positions_xy[0][index_position_xy-1]))/10-pos_y,2);
+		distance2_pt_apres = pow(-((double)(positions_xy[1][index_position_xy]  ))/10 - pos_x,2) + pow(-((double)(positions_xy[0][index_position_xy]  ))/10-pos_y,2);
+		if(distance2_pt_apres <= distance2_pt_avant)
+		{
+			if(++index_position_xy > (nbr_points-20)) //
 			{
-				speed_def[i] = speed_def_pivot;
-				accel_def[i] = accel_def_pivot;
-			}*/
-			
-			
-			accel_max[i] = accel_def[i];
-			speed_max[i] = speed_def[i];
+				fin=1;
+				/*
+				polaire = 0;
+				motion[0]=MOTION_DECEL;
+				motion[1]=MOTION_DECEL;
+				speed[0]=cons_vit_lin;
+				speed[1]=cons_vit_lin;
+				Stop(FREELY);
+				retour = FLAG_ENVOI; 	
+				*/
+			}
+		}
+		if(fin==0)
+		{		
+			if(fabs(cons_x-pos_x) > 0.01)
+				targ_cap = atan2((cons_x-pos_x),-(cons_y-pos_y)); // Angle sens trigo, y positif vers le bas, x positif vers la droite, anle 0 vers la droite)
+			else
+				targ_cap = pos_teta;
+		}
+
+
+	}
+	else
+	{
+		if(pid(1,cons_pos,real_pos)==1) // 150µs Max retourne 1 en cas de saturation hacheur
+		{
+			Stop(FREELY);
+			retour = FLAG_BLOCAGE;
+			return retour;
+		}
+		
+		
+		for(i=0;i<N;i++) 
+		{
+			if(motion[i]!=MOTION_STOP) // vitesse,position,accel 
+			{
+				if(flag_ligne)
+				{
+					speed_def[i] = speed_def_ligne;
+					accel_def_debut[i] = accel_def_ligne_debut;
+					accel_def_fin[i] = accel_def_ligne_fin;
+				}
+				else
+				{
+					speed_def[i] = speed_def_pivot;
+					accel_def_debut[i] = accel_def_pivot;
+					accel_def_fin[i] = accel_def_pivot;
+				}
 				
-			if(first[i])
-			{	
-				if(targ_pos[i] > real_pos[i])	sens[i] = 1; // Sens positif
-				else							sens[i] = 0; // Sens négatif
-				first[i]=0;
-			}		
-			accel[i]=accel_max[i];
-			distance_restante = speed[i]*speed[i]/(2*accel[i]);
-			motion[i] = MOTION_RUN; // mouvement par défaut
-			if(sens[i])
+				if(first[i])
+				{	
+					if(targ_pos[i] > real_pos[i])	sens[i] = 1; // Sens positif
+					else							sens[i] = 0; // Sens négatif
+					first[i]=0;
+				}		
+				
+				distance_restante = speed[i]*speed[i]/(2*accel_def_fin[i]);
+				motion[i] = MOTION_RUN; // mouvement par défaut
+				if(sens[i])
+				{
+					if((targ_pos[i]-cons_pos[i]) < distance_restante) // faut-il freiner ?
+						motion[i] = MOTION_DECEL;				
+					else if(speed[i] < speed_def[i]) // est ce qu'il faut accélérer ?
+						motion[i] = MOTION_ACCEL;
+					else if(speed[i] > speed_def[i]) 
+						motion[i] = MOTION_DECEL;
+				}
+				else
+				{
+					if((cons_pos[i]-targ_pos[i]) < distance_restante) // faut-il freiner ?
+						motion[i] = MOTION_DECEL;				
+					else if(speed[i] < speed_def[i]) // est ce qu'il faut accélérer ?
+						motion[i] = MOTION_ACCEL;
+					else if(speed[i] > speed_def[i]) 
+						motion[i] = MOTION_DECEL;
+				}
+			}
+		}
+	
+		if((cpt_calage[0] > 200) && (cpt_calage[1] > 200) && motiontype == 3)
+		//if((cpt_sature[0] > 10) && (cpt_sature[1] > 3) && motiontype == 3)
+		{
+			motiontype = 0;
+			cpt_calage[0] = 0;
+			cpt_calage[1] = 0;
+			Stop(ABRUPT);
+			retour = FLAG_CALAGE;
+			return retour;
+		}
+		
+	
+		for(i=0;i<N;i++) switch(motion[i]) // 10:12 -> Triangulaire | 20:23 -> Trapezoidale
+		{
+			case 0	:	// Idle	
+				speed[i]  = 0;		
+				break; 
+			case MOTION_ACCEL :	// Trapeze in progress
+				speed[i] += accel_def_debut[i] * 0.001;								
+				if(sens[i])	cons_pos[i] += speed[i] * 0.001;
+				else		cons_pos[i] -= speed[i] * 0.001;
+				break;
+			case MOTION_RUN	:	// Constant speed
+				if( sens[i] && real_pos[i] > decel_point[i]) motion[i]++;
+				if(!sens[i] && real_pos[i] < decel_point[i]) motion[i]++;
+				if(sens[i])	cons_pos[i] += speed[i] * 0.001;
+				else		cons_pos[i] -= speed[i] * 0.001;
+				break;
+			case MOTION_DECEL	:	// Deceleration sur arret imprévu (commande STOP SMOOTH)
+				speed[i] -= accel_def_fin[i] * 0.001;
+				if(sens[i])	cons_pos[i] += speed[i] * 0.001;
+				else		cons_pos[i] -= speed[i] * 0.001;
+				if(speed[i] <= 0) 	
+				{
+					motion[i] = 0;
+					speed[i]  = 0;
+					if(i==0) retour = FLAG_ENVOI; // 10/05/2013 ajout du if(i==0) 
+				}
+				break;
+			default :	
+				break;
+		}
+	}	
+
+	if(motiontype == 3) // calage
+	{
+		for(i=0;i<N;i++)
+		{
+			if(fabs(cons_pos[i] - real_pos[i]) > 50)
 			{
-				if((targ_pos[i]-cons_pos[i]) < distance_restante) // faut-il freiner ?
-					motion[i] = MOTION_DECEL;				
-				else if(speed[i] < speed_def[i]) // est ce qu'il faut accélérer ?
-					motion[i] = MOTION_ACCEL;
-				else if(speed[i] > speed_def[i]) 
-					motion[i] = MOTION_DECEL;
+				if(cpt_calage[i]<255) 
+					cpt_calage[i]++;
 			}
 			else
 			{
-				if((cons_pos[i]-targ_pos[i]) < distance_restante) // faut-il freiner ?
-					motion[i] = MOTION_DECEL;				
-				else if(speed[i] < speed_def[i]) // est ce qu'il faut accélérer ?
-					motion[i] = MOTION_ACCEL;
-				else if(speed[i] > speed_def[i]) 
-					motion[i] = MOTION_DECEL;
+				cpt_calage[i]=0;
 			}
 		}
 	}
-	
-	if((cpt_calage[0] > 200) && (cpt_calage[1] > 200) && motiontype == 3)
-	//if((cpt_sature[0] > 10) && (cpt_sature[1] > 3) && motiontype == 3)
+	else if(polaire!=1)
 	{
-		motiontype = 0;
-		cpt_calage[0] = 0;
-		cpt_calage[1] = 0;
-		Stop(ABRUPT);
-		retour = FLAG_CALAGE;
-		return retour;
-	}
-	
-
-	for(i=0;i<N;i++) switch(motion[i]) // 10:12 -> Triangulaire | 20:23 -> Trapezoidale
-	{
-		case 0	:	// Idle	
-			speed[i]  = 0;		
-			break; 
-		case MOTION_ACCEL :	// Trapeze in progress
-			speed[i] += accel[i] * 0.001;								
-			if(sens[i])	cons_pos[i] += speed[i] * 0.001;
-			else		cons_pos[i] -= speed[i] * 0.001;
-			break;
-		case MOTION_RUN	:	// Constant speed
-			if( sens[i] && real_pos[i] > decel_point[i]) motion[i]++;
-			if(!sens[i] && real_pos[i] < decel_point[i]) motion[i]++;
-			if(sens[i])	cons_pos[i] += speed[i] * 0.001;
-			else		cons_pos[i] -= speed[i] * 0.001;
-			break;
-		case MOTION_DECEL	:	// Deceleration sur arret imprévu (commande STOP SMOOTH)
-			speed[i] -= accel[i] * 0.001;
-			if(sens[i])	cons_pos[i] += speed[i] * 0.001;
-			else		cons_pos[i] -= speed[i] * 0.001;
-			if(speed[i] <= 0) 	
+		for(i=0;i<N;i++)
+			if(fabs(cons_pos[i] - real_pos[i]) > 150)
 			{
-				motion[i] = 0;
-				speed[i]  = 0;
-				//if(i==0) retour = FLAG_ENVOI; // 10/05/2013 ajout du if(i==0) 
+				if(cpt_blocage[i]++>20 && pid_power==1)
+				{
+					Stop(FREELY);
+					retour = FLAG_BLOCAGE;
+					return retour;
+				}
 			}
-			break;
-		default :	
-			break;
-	}	
+			else
+			{
+				cpt_blocage[i] =0;
+			}
+	}
 
 	return retour;
 }
@@ -491,9 +674,6 @@ void set_pid(double *coeffs)
 		ki[i] = coeffs[j++];
 		kd[i] = coeffs[j++];
 	}
-	//kp[0]=6;
-	//ki[0]=0.4;
-	//kd[0]=120; // 0 ==> ascenseur gauche
 }
 
 
@@ -502,9 +682,8 @@ void set_pid(double *coeffs)
 unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 {
 	unsigned char i,j;
-	double cor[N];
-	static double erreur_old[N]={0};
-	static double erreur_sum[N]={0};
+	double cor[N],cor_cap,cor_vit;
+	static double erreur_old[N]={0},erreur_cap=0,erreur_vit=0,erreur_cap_old=0 ,erreur_vit_old=0 ;
 	
 
 	if(flagdefinehome)
@@ -522,7 +701,7 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 		QEI2CONbits.QEIM = QEI1CONbits.QEIM;
 	}
 
-	/*
+	
 	if(revolutions[0]<0)	position_buffer[0] = 1;
 	else					position_buffer[0] = 0;
 	if(revolutions[1]<0)	position_buffer[3] = 1;
@@ -540,103 +719,162 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 	raw_position[0] = (long)POS1CNT + (long)(revolutions[0]*0x10000);
 	raw_position[1] = (long)POS2CNT + (long)(revolutions[1]*0x10000);
 
-	buff_position[0][buff_position_ptr]   = raw_position[0];
-	buff_position[1][buff_position_ptr++] = raw_position[1];
-*/
+	//buff_position[0][buff_position_ptr]   = raw_position[0]; // gain de place traj. courbe
+	//buff_position[1][buff_position_ptr++] = raw_position[1];
+
 	// Calcul de la position reelle en mm
-	real_pos[0] = 1.000 * MM_SCALER * (double)ADC_Results[2]; // Ascenseur Gauche
-	real_pos[1] = 1.000 * MM_SCALER * (double)ADC_Results[0]; // Ascenseur Droit
-	
-// modif 2016 : pas d'asser
-/*		
+	real_pos[0] = 1.000 * MM_SCALER * (double)raw_position[0]; // Roue droite
+	real_pos[1] = 1.000 * MM_SCALER * (double)raw_position[1]; // Roue gauche
 
-	for(i=0;i<N;i++)
+	cor[0] = 0;
+	cor[1] = 0;
+
+	
+	if(pid_power)
 	{
-		cor[i] = 0;
-	
-		if(pid_power[i])
+		
+		if(polaire)
 		{
-			switch(i)
-			{
-				case 0:	
-					erreur[0] = targ_pos[0]*MM_INVSCALER - (double)ADC_Results[2];// ; // Calcul de l'erreur en pas codeur
-					break;
-				case 1: 
-					erreur[1] = targ_pos[1]*MM_INVSCALER - (double)ADC_Results[0];// ; // Calcul de l'erreur en pas codeur
-					break;
-			}
+			// double pid cap + vitesse
+			// calcul de l'erreur en cap 		: erreur_cap = cons_cap - real_cap --> OK
+			// calcul de l'erreur en vitesse	: erreur_vit = cons_vit - vitesse 
 			
-			if((motion[0] == 0) && (motion[1] == 0))
-			{
-				if(pid_count < 1000)
-					pid_count++;
-			}
-			else
-			{
-				pid_count = 0;
-			}
-			
-			erreur_sum[i] += erreur[i]/4;
+			// calcul pid 						: cor_cap = ...
+			// calcul pid 						: cor_vit = ...
 
-			if(erreur_sum[i] >  4000/DEFAULT_KI) erreur_sum[i] =  4000/DEFAULT_KI;
-			if(erreur_sum[i] < -4000/DEFAULT_KI) erreur_sum[i] = -4000/DEFAULT_KI;
-						
-			cor[i] = erreur[i]*kp[i] + erreur_sum[i]*ki[i] + (erreur[i] - erreur_old[i])*kd[i];
+			// Fusion de pid					: pwm1/2 = cor_vit +/- cor_cap
+
 			
-			erreur_old[i] = erreur[i]; // Mise a jour necessaire pour le terme derive
-			pwm_cor[i] = cor[i];
+			//erreur_cap = cons_pos_ang - real_pos_ang;// ; // Calcul de l'erreur de cap
+			erreur_cap = targ_cap - real_pos_ang;// ; // Calcul de l'erreur de cap
 			
-			if(++ptr_cor_moy[i]>(MOYENNE_GLISSANTE_CORRECTEUR-1))	ptr_cor_moy[i] = 0;
-			cor_moy[i][ptr_cor_moy[i]]=cor[i];
-			cor[i]=0;
-			for(j=0;j<MOYENNE_GLISSANTE_CORRECTEUR;j++)
-				cor[i] += cor_moy[i][j];
-			cor[i]=cor[i]/MOYENNE_GLISSANTE_CORRECTEUR;
-			if(cor[i] > 4000)
-			{
-				saturation_pos[i]+=5;
-			}
-			else if(saturation_pos[i]>0)
-			{
-				saturation_pos[i]--;
-			}
-			if(cor[i] < -4000)
-			{
-				saturation_neg[i]+=5;
+			cor_cap = erreur_cap*kp_cap + (erreur_cap - erreur_cap_old)*kd_cap;
+			erreur_cap_old = erreur_cap; // Mise a jour necessaire pour le terme derive
+			
+			erreur_vit = cons_pos_lin - real_pos_lin;// ; // Calcul de l'erreur de vitesse
+			cor_vit = erreur_vit*kp_vit + (erreur_vit - erreur_vit_old)*kd_vit;
+			erreur_vit_old = erreur_vit; // Mise a jour necessaire pour le terme derive
 				
-			}
-			else if(saturation_neg[i]>0)
-			{	
-				saturation_neg[i]--;
-			}
-			
-			if(motiontype == 3)			
-			{
-				saturation_pos[0]=0;
-				saturation_neg[0]=0;
-				saturation_pos[1]=0;
-				saturation_neg[1]=0;
-			}
+			cor[0] = cor_vit - cor_cap;
+			cor[1] = cor_vit + cor_cap;
 
-			if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
+			for(i=0;i<N;i++)
 			{
-				saturation_pos[0]=0;
-				saturation_neg[0]=0;
-				saturation_pos[1]=0;
-				saturation_neg[1]=0;
-				//return 1;
+				pwm_cor[i] = cor[i];
+				if(cor[i] > 4000)
+				{
+					saturation_pos[i]+=5;
+				}
+				else if(saturation_pos[i]>0)
+				{
+					saturation_pos[i]--;
+				}
+				if(cor[i] < -4000)
+				{
+					saturation_neg[i]+=5;
+				}
+				else if(saturation_neg[i]>0)
+				{	
+					saturation_neg[i]--;
+				}
+				
+				if(motiontype == 3)			
+				{
+					saturation_pos[0]=0;
+					saturation_neg[0]=0;
+					saturation_pos[1]=0;
+					saturation_neg[1]=0;
+				}
+	
+				if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
+				{
+					saturation_pos[0]=0;
+					saturation_neg[0]=0;
+					saturation_pos[1]=0;
+					saturation_neg[1]=0;
+					return 1;
+				}
 			}
-			pwm(i,cor[i]);
-			cor[i] += 4000;
-			if(cor[i]>8000) cor[0]=8000;
-			if(cor[i]<0) cor[0]=0;			
+			pwm(GAUCHE,-cor[0]);
+			pwm(DROITE,cor[1]);
+			cor[0] += 4000;
+			cor[1] += 4000;
+			if(cor[0]>8000) cor[0]=8000;
+			if(cor[1]>8000) cor[1]=8000;
+			if(cor[0]<0) cor[0]=0;
+			if(cor[1]<0) cor[1]=0;
 		}
 		else
 		{
-			pwm(i,0);
+			for(i=0;i<N;i++)
+			{
+				erreur[i] = targ_pos[i]* MM_INVSCALER - (double)raw_position[i];// ; // Calcul de l'erreur en pas codeur
+				if((motion[0] == 0) && (motion[1] == 0))
+				{
+					if(pid_count < 1000)
+						pid_count++;
+				}
+				else
+				{
+					pid_count = 0;
+				}
+				
+				//if(pid_count == 1000) 	cor[i] = erreur[i]*(kp[i]-5);
+				/*else					*/cor[i] = erreur[i]*kp[i] + (erreur[i] - erreur_old[i])*kd[i];
+				
+				erreur_old[i] = erreur[i]; // Mise a jour necessaire pour le terme derive
+				pwm_cor[i] = cor[i];
+				
+				if(++ptr_cor_moy[i]>(MOYENNE_GLISSANTE_CORRECTEUR-1))	ptr_cor_moy[i] = 0;
+				cor_moy[i][ptr_cor_moy[i]]=cor[i];
+				cor[i]=0;
+				for(j=0;j<MOYENNE_GLISSANTE_CORRECTEUR;j++)
+					cor[i] += cor_moy[i][j];
+				cor[i]=cor[i]/MOYENNE_GLISSANTE_CORRECTEUR;
+				if(cor[i] > 4000)
+				{
+					saturation_pos[i]+=5;
+				}
+				else if(saturation_pos[i]>0)
+				{
+					saturation_pos[i]--;
+				}
+				if(cor[i] < -4000)
+				{
+					saturation_neg[i]+=5;
+				}
+				else if(saturation_neg[i]>0)
+				{	
+					saturation_neg[i]--;
+				}
+				
+				if(motiontype == 3)			
+				{
+					saturation_pos[0]=0;
+					saturation_neg[0]=0;
+					saturation_pos[1]=0;
+					saturation_neg[1]=0;
+				}
+	
+				if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
+				{
+					saturation_pos[0]=0;
+					saturation_neg[0]=0;
+					saturation_pos[1]=0;
+					saturation_neg[1]=0;
+					return 1;
+				}
+			}
+			pwm(GAUCHE,-cor[0]);
+			pwm(DROITE,cor[1]);
+			cor[0] += 4000;
+			cor[1] += 4000;
+			if(cor[0]>8000) cor[0]=8000;
+			if(cor[1]>8000) cor[1]=8000;
+			if(cor[0]<0) cor[0]=0;
+			if(cor[1]<0) cor[1]=0;
 		}
 	}
-	*/
 	buff_status[0][buff_status_ptr]   = cpu_status;
 	buff_status[1][buff_status_ptr]   = (unsigned int)cor[0];
 	buff_status[2][buff_status_ptr++] = (unsigned int)cor[1];
@@ -645,72 +883,110 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 	return 0;
 }
 
-char pwm(unsigned char motor, double value) // Value = +/- 4000
+char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 {
-	if(value >  4095) value =  4095;
-	if(value < -4095) value = -4095;
+	double value;
+
+	value = valeur;
+
+	value = value / 1;
+
+
+	if(bridage)
+	{
+		if(value >  2200) value =  2200;
+		if(value < -2200) value = -2200;	
+	}
+
+	if(value >  4000) value =  4000;
+	if(value < -4000) value = -4000;	
+
+	value = value * 2;
+	
+	
 
 	
+
 	switch(motor)
 	{
-		case ID_MOTEUR_ASCENSEUR_DROITE:
-			
-			value = -value;
-			if(value >= 0)
-			{
-				DIR_ASCENSEUR_DROITE  = 1;	
-				PWM_ASCENSEUR_DROITE = (unsigned int)(value);			
-			}
-			else
-			{
-				DIR_ASCENSEUR_DROITE  = 0;	
-				PWM_ASCENSEUR_DROITE = (unsigned int)(-value);		
-			}
-			break;
-			
-		case ID_MOTEUR_ASCENSEUR_GAUCHE:
-
-			value = -value;
-			if(value >= 0)
-			{
-				DIR_ASCENSEUR_GAUCHE  = 1;	
-				PWM_ASCENSEUR_GAUCHE = (unsigned int)(4095 - value);		
-			}
-			else
-			{
-				DIR_ASCENSEUR_GAUCHE  = 0;	
-				PWM_ASCENSEUR_GAUCHE = (unsigned int)(4095 + value);		
-			}
-			break;
 		
-		case ID_MOTEUR_BALISE:
-
-			if(value >= 0)
-			{
-				PWM_BALISE = (unsigned int)(4095 - value);		
-			}
-			else
-			{
-				
-			}
-			break;
-		case ID_MOTEUR_POMPE:
-
-			value = -value;
-			if(value >= 0)
-			{
-				DIR_POMPE  = 1;	
-				PWM_POMPE = (unsigned int)(4095 - value);		
-			}
-			else
-			{
-				DIR_POMPE  = 0;	
-				PWM_POMPE = (unsigned int)(4095 + value);		
-			}
-			break;
-		default : 	
-		
-			return -1;
+		case MOTEUR_1:	if(value > 0)	// Moteur Gauche
+						{
+							PWM2CON1bits.PEN1L = 0;
+							PWM2CON1bits.PEN1H = 1;
+							MOT1H=0;
+							P2DC1 = (unsigned int)(value);		
+						}
+						else
+						{
+							PWM2CON1bits.PEN1L = 1;
+							PWM2CON1bits.PEN1H = 0;
+							MOT1L=0;
+							P2DC1 = 8000-(unsigned int)(-value);		
+						}
+						break;
+		case AVANT:
+		case GAUCHE: 	
+		case MOTEUR_2:	if(motiontype == 3)
+							{
+								if(value >  2000) value =  2000;
+								if(value < -2000) value = -2000;	
+						
+							}
+						if(value > 0)	// Moteur Gauche
+						{
+							PWM1CON1bits.PEN3L = 0;
+							PWM1CON1bits.PEN3H = 1;
+							MOT2H=0;
+							P1DC3 = (unsigned int)(+value);		
+						}
+						else
+						{
+							PWM1CON1bits.PEN3L = 1;
+							PWM1CON1bits.PEN3H = 0;
+							MOT2L=0;
+							P1DC3 = 8000-(unsigned int)(-value);		
+						}
+						break;
+		case ARRIERE:
+		case DROITE:
+		case MOTEUR_3:		if(motiontype == 3)
+							{
+								if(value >  2000) value =  2000;
+								if(value < -2000) value = -2000;	
+						
+							}
+						if(value > 0)	// Moteur Gauche
+						{
+							PWM1CON1bits.PEN2L = 0;
+							PWM1CON1bits.PEN2H = 1;
+							MOT3H=0;
+							P1DC2 = (unsigned int)(value);		
+						}
+						else
+						{
+							PWM1CON1bits.PEN2L = 1;
+							PWM1CON1bits.PEN2H = 0;
+							MOT3L=0;
+							P1DC2 = 8000-(unsigned int)(-value);		
+						}
+						break;
+		case MOTEUR_4:	if(value > 0)	// Moteur Gauche
+						{
+							PWM1CON1bits.PEN1L = 0;
+							PWM1CON1bits.PEN1H = 1;
+							MOT4H=0;
+							P1DC1 = (unsigned int)(value);		
+						}
+						else
+						{
+							PWM1CON1bits.PEN1L = 1;
+							PWM1CON1bits.PEN1H = 0;
+							MOT4L=0;
+							P1DC1 = 8000-(unsigned int)(-value);		
+						}
+						break;
+		default : 		return -1;
 	}
 	return 0;
 }
@@ -718,31 +994,6 @@ char pwm(unsigned char motor, double value) // Value = +/- 4000
 
 //----------------------------------------------------------------------------
 
-
-void Sleepms(unsigned int nbr)
-{
-	unsigned int i,j;
-
-	for(i=0;i<nbr;i++)
-		for(j=0;j<8000;j++);
-}
-
-void Sleepus(unsigned int nbr) // Défaut constant de +0.5us
-{
-	unsigned int i;
-
-	for(i=0;i<nbr;i++)
-	{
-		Nop();	Nop();	Nop();	Nop();
-		Nop();	Nop();	Nop();	Nop();
-		Nop();	Nop();	Nop();	Nop();
-		Nop();	Nop();	Nop();	Nop();
-		Nop();	Nop();	Nop();	Nop();
-		Nop();	Nop();	Nop();	Nop();
-		Nop();	Nop();	Nop();	Nop();
-		Nop();	Nop();	Nop();	Nop();
-	}
-}
 
 
 void __attribute__ ((interrupt, no_auto_psv)) _QEI1Interrupt(void) 
