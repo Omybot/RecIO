@@ -15,7 +15,7 @@
 #define S3 LATAbits.LATA7
 //	Extern Capteur Couleur
 extern unsigned int Tab_Capteur_Couleur[8];
-
+extern unsigned char alim_capteur_couleur;
 // UART
 extern 	unsigned char flag_envoi_uart,buffer_envoi_uart[UART_BUFFER_SIZE],ptr_write_buffer_uart;
 
@@ -1402,9 +1402,12 @@ Trame AnalyseTrame(Trame t)
 			return Retour_Valeurs_Analogiques();
 			break;
 
-		case CMD_ACTIONNEUR_ONOFF:
+		case TRAME_PILOTAGE_ONOFF:
 			switch (t.message[2])
 			{
+				case ALIMENTATION_CAPTEUR_COULEUR:
+					alim_capteur_couleur = t.message[3];
+					break;
 			}
 			break;
 

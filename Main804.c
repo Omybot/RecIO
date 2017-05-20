@@ -69,7 +69,7 @@ unsigned char tir=0,tir_power=0;
 //Variable Capteur Couleur
 unsigned int Cpt_Tmr2_Capteur_Couleur = 0;
 unsigned int Tab_Capteur_Couleur[8] = {0};
-unsigned char etat_Capteur_Couleur = 0;
+unsigned char etat_Capteur_Couleur = 0,alim_capteur_couleur=0;
 
 void _ISR __attribute__((__no_auto_psv__)) _AddressError(void)
 {
@@ -299,14 +299,18 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 	cpu_status = (TMR4); //Previous value TMR4
 
 	// Gestion capteur de couleur
-	Cpt_Tmr2_Capteur_Couleur++;
-	
+	if(alim_capteur_couleur)
+	{
+		Cpt_Tmr2_Capteur_Couleur++;
 		if(Cpt_Tmr2_Capteur_Couleur == 20)
 		{
 			Cpt_Tmr2_Capteur_Couleur = 0;
-	
-			switch(++etat_Capteur_Couleur){
-				
+			switch(etat_Capteur_Couleur++)
+			{	
+				case 0:
+					S2  = 0;
+					S3  = 0; 
+					LED = 0;
 				case 1: // Capture RED filter without led
 					Tab_Capteur_Couleur[0] = Send_Variable_Capteur_Couleur(); // Capture de S2=0, S3=0 et LED=0
 					S2  = 0;
@@ -353,10 +357,18 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 					Tab_Capteur_Couleur[7] = Send_Variable_Capteur_Couleur(); // Capture de S2=1, S3=1 et LED=1 
 					S2  = 0;
 					S3  = 0; 
-					LED = 0;
-					etat_Capteur_Couleur = 0;
+					LED = 1; // On saute l'étape 4
+					etat_Capteur_Couleur = 5;
 				break;
 			}
+		}
+	}
+	else
+	{
+		LED = 0;
+		S2  = 0;
+		S3  = 0; 
+		etat_Capteur_Couleur=4;
 	}
 	IFS1bits.T4IF = 0;
 }

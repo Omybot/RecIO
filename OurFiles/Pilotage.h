@@ -188,7 +188,7 @@ void PiloteRecalageStepper(void);
 #define CMD_ENVOI_BAUDRATE_MICRO		0x61
 
 // Actionneurs
-#define CMD_ACTIONNEUR_ONOFF			0x65
+#define TRAME_PILOTAGE_ONOFF 			0x65
 #define CMD_MOTEUR_POSITION				0x66
 #define CMD_VITESSE_MOTEUR				0x67
 #define CMD_ACCELERATION_MOTEUR			0x68
@@ -315,5 +315,9 @@ void PiloteRecalageStepper(void);
 #define CMD_DEMANDE_PRESENCE_JACK		0xF3
 #define CMD_REPONSE_PRESENCE_JACK		0xF4
 #define CMD_REPONSE_ECHO				0xF0
+
+
+// Liste des actionneurs
+#define ALIMENTATION_CAPTEUR_COULEUR	0x01
 
 #endif // __PILOTAGE_H__
