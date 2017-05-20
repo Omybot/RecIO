@@ -280,7 +280,7 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 	flag = 0;
 	
 	motor_flag = Motors_Task(); // Si prend trop de ressource sur l'udp, inclure motortask dans le main	
-	
+	timeout_servo++;
 	if(motor_flag == 0x10)
 	{
 		motor_flag=0;

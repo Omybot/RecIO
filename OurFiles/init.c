@@ -27,17 +27,19 @@ void InitClk(void)
 void Init_Interrupt_Priority(void)
 {
 
-	IPC0bits.T1IP   = 4;	//5		// Timer 1 used by Ethernet (Default value = 2)
-	IPC1bits.T2IP   = 5;	//6		// Timer 2 used to generate PWM
+	
 	IPC2bits.T3IP   = 7;			// Timer 3 used by Input Capture (IC1)
-	IPC2bits.U1RXIP = 4;			// UART RX Interrupt
-	IPC3bits.U1TXIP = 4;			// UART TX Interrupt
-	IPC6bits.T4IP   = 3;			// Timer 4 Used by Asser
-	IPC7bits.T5IP   = 6;	//5		// Timer 5 Used by Canon
 	IPC14bits.QEI1IP = 7;			// Quad Encoder Interrupt
 	IPC18bits.QEI2IP = 7;			// Quad Encoder Interrupt
 	IPC15bits.DMA5IP = 6;			// DMA5 Interrupt
 	IPC0bits.IC1IP   = 6;			// Input Capture used by Capteur Couleur
+	IPC7bits.T5IP   = 6;	//5		// Timer 5 Used by Canon
+	IPC1bits.T2IP   = 5;	//6		// Timer 2 used to generate PWM
+	IPC0bits.T1IP   = 4;	//5		// Timer 1 used by Ethernet (Default value = 2)
+	IPC2bits.U1RXIP = 3;			// UART RX Interrupt
+	IPC3bits.U1TXIP = 3;			// UART TX Interrupt
+	IPC6bits.T4IP   = 2;			// Timer 4 Used by Asser
+
 }
 
 void InitPorts(void) 

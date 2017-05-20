@@ -69,7 +69,7 @@ void delayms(void);
 
 //ASSERVISSEMENT
 
-int PiloteVitesse(int vitesse);
+int PiloteVitesse(unsigned int id, unsigned int sens, unsigned int vitesse);
 int PiloteAcceleration(int acceleration);
 int PiloteAvancer(double distance);
 int PiloteReculer(double distance);
@@ -152,6 +152,10 @@ void PiloteRecalageStepper(void);
 #define CPT_PERIODE_20MS 6250
 #define RISING_EDGE 1
 #define FALLING_EDGE 0
+
+// Moteur sens
+#define SENS_DROITE 3
+#define SENS_GAUCHE 2
 
 // Deplacements
 #define	CMD_AVANCER						0x01

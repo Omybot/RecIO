@@ -711,10 +711,30 @@ void PiloteAlimentation(char onOff)
 {
 }
 
-int PiloteVitesse(int vitesse)
+int PiloteVitesse(unsigned int id, unsigned int sens, unsigned int vitesse)
 {
-	Motors_SetSpeed(vitesse,MOTEUR_GAUCHE);
-	Motors_SetSpeed(vitesse,MOTEUR_DROIT);
+	double vit = (double)vitesse;
+
+	if(sens == SENS_DROITE)
+		vit = -vit;
+	
+	switch (id)
+	{
+		case 1: // Moteur 1	
+			pwm(MOTEUR_1,vit);	
+			break;
+		case 2: // Moteur 2
+			pwm(MOTEUR_2,vit);
+			break;
+		case 3: // Moteur 3
+			pwm(MOTEUR_3,vit);
+			break;
+		case 4: // Moteur 4
+			pwm(MOTEUR_4,vit);
+			break;
+	}
+//	Motors_SetSpeed(vitesse,MOTEUR_GAUCHE);
+//	Motors_SetSpeed(vitesse,MOTEUR_DROIT);
 	return 1;
 }
 
@@ -1360,22 +1380,10 @@ Trame AnalyseTrame(Trame t)
 			break;
 
 		case CMD_VITESSE_MOTEUR:
-			param1 = t.message[3] * 256 + t.message[4];
-			switch (t.message[2])
-			{
-				case 1: // Moteur 1
-					pwm(MOTEUR_1,(double)((int)param1));			
-					break;
-				case 2: // Moteur 2
-					pwm(MOTEUR_2,(double)((int)param1));			
-					break;
-				case 3: // Moteur 3
-					pwm(MOTEUR_3,(double)((int)param1));			
-					break;
-				case 4: // Moteur 4
-					pwm(MOTEUR_4,(double)((int)param1));			
-					break;
-			}
+			param1 = t.message[2];						// ID
+			param2 = t.message[3];						// SENS
+			param3 = t.message[4] * 256 + t.message[5]; // Valeur Vitesse
+			PiloteVitesse(param1, param2 , param3);
 			break;
 
 		case CMD_ACCELERATION_MOTEUR:
@@ -1615,6 +1623,7 @@ Trame AnalyseTrame(Trame t)
 					PiloteServoReset(param1);
 					break;
 			}
+			break;
 		case CMD_ENVOI_UART:
 			EnvoiUART(t);
 			break;
