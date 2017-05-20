@@ -1356,7 +1356,7 @@ Trame AnalyseTrame(Trame t)
 		break;
 
 		case CMD_DEMANDE_ECHO:
-			retour = PiloteEcho();
+			//retour = PiloteEcho();
 			break;
 
 		case CMD_VITESSE_MOTEUR:
