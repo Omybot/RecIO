@@ -311,7 +311,7 @@ void InitUART(void)
 
 void InitUART1(void) 
 {
-    U1BRG = 522;				// ? Baud
+    U1BRG = 522;				// 19120 Bauds
 	U1MODEbits.UARTEN = 1;		// UART1 is Enabled
 	U1MODEbits.USIDL = 0;		// Continue operation at Idlestate
 	U1MODEbits.IREN = 0;		// IrDA En/Decoder is disabled
@@ -321,7 +321,7 @@ void InitUART1(void)
 	U1MODEbits.LPBACK = 0;		// Loop-back is disabled
 	U1MODEbits.ABAUD = 0;		// auto baud is disabled
 	U1MODEbits.URXINV = 0;		// No RX inversion
-	U1MODEbits.BRGH = 1;		// low boud rate
+	U1MODEbits.BRGH = 1;		// High baud rate
 	U1MODEbits.PDSEL = 0b00; 	// 8bit no parity
 	U1MODEbits.STSEL = 0;		// one stop bit
 
