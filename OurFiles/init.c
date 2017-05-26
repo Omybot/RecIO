@@ -341,7 +341,7 @@ void InitUART1(void)
 
 void InitUART2(void)
 {
-	U2BRG = 259;				// 115200 baud
+	U2BRG = 259;				// 9600 bauds
 	U2MODEbits.UARTEN = 1;		// UART2 is Enabled
 	U2MODEbits.USIDL = 0;		// Continue operation at Idlestate
 	U2MODEbits.IREN = 0;		// IrDA En/Decoder is disabled
