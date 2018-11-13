@@ -13,6 +13,7 @@
 #include "OurFiles/FonctionsUc.h"
 #include "OurFiles/Stepper.h"
 
+
 //Define Capteur Couleur
 #define LED LATAbits.LATA8
 #define S2 LATAbits.LATA10
@@ -20,12 +21,26 @@
 
 // UART
 #define UART_BUFFER_SIZE	100
+#define UART_BUFFER_SIZE2	100
 #define SIZE_TRAME_INIT_SERVO 15
 unsigned char InitServo[SIZE_TRAME_INIT_SERVO] = {0x04, 0x84, 0x00, 0x08, 0x27, 0x04, 0x84, 0x10, 0x00, 0x19, 0x04, 0x89, 0x10, 0x10, 0x4E};
 unsigned char ptr_read_buffer_uart=0,ptr_write_buffer_uart=0;
 unsigned char buffer_envoi_uart[UART_BUFFER_SIZE];
 unsigned char Buffer_passerelle_udpuart[250];
 unsigned char ptr_write_buffer_uart_rec=0;
+unsigned char ptr_read_buffer_uart2=0,ptr_write_buffer_uart2=0;
+unsigned char buffer_envoi_uart2[UART_BUFFER_SIZE2];
+unsigned char Buffer_passerelle_udpuart2[250];
+unsigned char ptr_write_buffer_uart_rec2=0,ptr_read_buffer_uart_rec2=0;
+
+unsigned char offset_premiere_trame2=0;
+unsigned char timeout_uart2=0;
+unsigned char nbr_char_to_send2=0;
+unsigned char save_write2;
+unsigned char save_read2;
+unsigned char flag_envoi_uart2,ptr_write_buffer_uart2;
+
+
 // Fin UART
 
 // Bits configuration
@@ -96,6 +111,14 @@ int main(void)
 	messUART[2] = 0xFE;
 	envoiUART.message = messUART;
 	envoiUART.nbChar = 53;
+
+	Trame envoiUART2;
+	static BYTE messUART2[50];
+	messUART2[0] = UDP_ID;
+	messUART2[1] = CMD_RECEPTION_UART2;
+	envoiUART2.message = messUART2;
+	envoiUART2.nbChar = 53;
+	
 	
 	InitClk(); 		// Initialisation de l'horloge
 	InitPorts(); 	// Initialisation des ports E/S
@@ -146,7 +169,50 @@ int main(void)
 			if(ptr_read_buffer_uart >= UART_BUFFER_SIZE)
 				ptr_read_buffer_uart=0;
 		}
-	
+		
+		// Gestion Reception UART / Envoi UDP
+		save_write2 = ptr_write_buffer_uart_rec2;
+		save_read2 = ptr_read_buffer_uart_rec2;
+		if((save_write2 != save_read2))
+		{
+			if(save_write2 < save_read2)
+				nbr_char_to_send2 = 241 - save_read2 + save_write2;
+			else
+				nbr_char_to_send2 = save_write2 - save_read2;
+		}
+		else
+		{
+			nbr_char_to_send2 = 0;
+		}	
+
+		if(((nbr_char_to_send2 >= 10) || (nbr_char_to_send2 !=0 && timeout_uart2 > 50)))
+		{	
+			for(i=0;i<nbr_char_to_send2;i++)
+			{
+				messUART2[i+3+offset_premiere_trame2]=Buffer_passerelle_udpuart2[save_read2++];
+				if(save_read2>240)
+					save_read2=0;
+			}
+			
+			timeout_uart2=0;
+			envoiUART2.nbChar = nbr_char_to_send2+3+offset_premiere_trame2;
+			offset_premiere_trame2=0;
+			EnvoiUserUdp(envoiUART2); // Bon ok 1 pt pour kryss
+			ptr_read_buffer_uart_rec2 = save_write2;
+		}
+
+
+		if((ptr_write_buffer_uart2 != ptr_read_buffer_uart2) && U1STAbits.TRMT != 0)
+		{
+			// Gestion envoi trame
+			U1TXREG = buffer_envoi_uart2[ptr_read_buffer_uart2++];
+			if(ptr_read_buffer_uart2 >= UART_BUFFER_SIZE2)
+				ptr_read_buffer_uart2=0;
+		}
+
+		
+		
+
 		StackTask();
 		trame = ReceptionUserUdp();
 		if(trame.nbChar != 0)
@@ -281,6 +347,8 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 	
 	motor_flag = Motors_Task(); // Si prend trop de ressource sur l'udp, inclure motortask dans le main	
 	timeout_servo++;
+	timeout_uart2++;
+
 	if(motor_flag == 0x10)
 	{
 		motor_flag=0;
@@ -372,47 +440,6 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 	}
 	IFS1bits.T4IF = 0;
 }
-//Interrupt receive message UART1
-void __attribute__((interrupt,auto_psv)) _U1RXInterrupt(void)
-{
-	static unsigned etat_rx=0;
-	static unsigned char recu,recu_ptr;
-
-	IFS0bits.U1RXIF = 0; 		// clear RX interrupt flag
-	
-	if(U1STAbits.URXDA == 1)
-	{
-		recu = U1RXREG;
-		if(flag_servo==0)
-		{
-			switch(etat_rx)
-			{
-				case 0: recu_ptr=0;
-						if(recu == 0xFF)	etat_rx++;
-						trame_recu[recu_ptr++]=recu;
-						break;
-				case 1: if(recu == 0xFF)	etat_rx++;
-						else	etat_rx=0;
-						trame_recu[recu_ptr++]=recu;
-						break;
-				case 2:	etat_rx++;
-						trame_recu[recu_ptr++]=recu;
-						break;
-				case 3:	recu_nbr = recu;
-						etat_rx++;
-						trame_recu[recu_ptr++]=recu;
-						break;
-				case 4:	trame_recu[recu_ptr++]=recu;
-						if(recu_ptr == (recu_nbr + 4))
-						{
-							flag_servo=1;
-							etat_rx=0;
-						}
-						break;
-			}
-		}
-	}			
-}
 
 //void __attribute__((interrupt, no_auto_psv)) _IC1Interrupt(void)
 //{
@@ -436,6 +463,20 @@ void __attribute__((interrupt, no_auto_psv)) _IC7Interrupt(void)
 	//IC7BUF;		
 	IC7CONbits.ICM = 0b001;
 	IFS1bits.IC7IF=0;
+}
+
+//Interrupt receive message UART1
+void __attribute__((interrupt,auto_psv)) _U1RXInterrupt(void)
+{
+	IFS0bits.U1RXIF = 0; 		// clear RX interrupt flag
+	
+	if(U1STAbits.URXDA == 1)
+	{
+		timeout_uart2 = 0;
+		Buffer_passerelle_udpuart2[ptr_write_buffer_uart_rec2++] = U1RXREG;
+		if(ptr_write_buffer_uart_rec2>240)
+			ptr_write_buffer_uart_rec2=0;
+	}			
 }
 
 //Interrupt receive message UART1

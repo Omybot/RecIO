@@ -8,6 +8,7 @@
 #include "Stepper.h"
 
 #define UART_BUFFER_SIZE 100
+#define UART_BUFFER_SIZE2 100
 
 //Define Capteur Couleur
 #define LED LATAbits.LATA8
@@ -18,6 +19,7 @@ extern unsigned int Tab_Capteur_Couleur[8];
 extern unsigned char alim_capteur_couleur;
 // UART
 extern 	unsigned char flag_envoi_uart,buffer_envoi_uart[UART_BUFFER_SIZE],ptr_write_buffer_uart;
+extern 	unsigned char flag_envoi_uart2,buffer_envoi_uart2[UART_BUFFER_SIZE2],ptr_write_buffer_uart2;
 
 // ATTENTION /!\ Ces fonctions ne doivent pas �tre bloquantes
 extern unsigned char detection_pompe;
@@ -110,7 +112,7 @@ void __attribute__((__interrupt__,__auto_psv__)) _IC1Interrupt(void)
 // DEBUG
 Trame PiloteDebug0(Trame t)
 {
-	t = Couleur_Balle();
+	EnvoiUART2(t);
 	return t;
 }
 
@@ -1323,6 +1325,19 @@ void EnvoiUART(Trame t)
 	}
 }
 
+void EnvoiUART2(Trame t)
+{
+	unsigned char i;
+	// Copier trame dans buffer circulaire d'envoi
+	for(i=0;i<t.nbChar-3;i++)
+	{
+		buffer_envoi_uart2[ptr_write_buffer_uart2++]=t.message[i+3];
+		if(ptr_write_buffer_uart2 >= UART_BUFFER_SIZE2)
+			ptr_write_buffer_uart2=0;
+	}
+}
+
+
 // Analyse la trame recue et renvoie vers la bonne fonction de pilotage
 // Trame t : Trame ethernet recue
 Trame AnalyseTrame(Trame t)
@@ -1630,7 +1645,9 @@ Trame AnalyseTrame(Trame t)
 		case CMD_ENVOI_UART:
 			EnvoiUART(t);
 			break;
-
+		case CMD_ENVOI_UART2:
+			EnvoiUART2(t);
+			break;
 		case CMD_DEMANDE_CAPTEUR_COULEUR:
       		retour = CouleurRGB(t.message[2]);
 			break;

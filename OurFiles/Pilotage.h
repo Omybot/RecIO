@@ -293,6 +293,8 @@ void PiloteRecalageStepper(void);
 // Passerelle UART
 #define CMD_ENVOI_UART					0xA0
 #define CMD_RECEPTION_UART				0xA1
+#define CMD_ENVOI_UART2					0xA4
+#define CMD_RECEPTION_UART2				0xA5
 
 
 // Capteurs

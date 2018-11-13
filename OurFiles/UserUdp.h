@@ -19,6 +19,7 @@ typedef struct Trame
 	int nbChar;
 } Trame;
 
+#define UDP_ID 0xC4
 #define portReception 12314
 #define portEmission 12324
 

@@ -58,7 +58,7 @@ void InitPorts(void)
 	
 	TRISBbits.TRISB0=1; // MOT1_I - Moteurs
 	TRISBbits.TRISB1=1; // MOT3_I - Moteurs
-	TRISBbits.TRISB2=1; // RB2 - Mezzanine - (RECIO)Disponible
+	TRISBbits.TRISB2=1; // RB2 - Mezzanine - (RECIO)UART/CAN TxDspic
 	TRISBbits.TRISB3=1; // RB3 - Mezzanine - (RECIO)Lulu TX - UART RX
 	TRISBbits.TRISB4=1; // RB4 - Mezzanine - (RECIO)Capteur couleur - OUT
 	TRISBbits.TRISB5=1; // PGD - JTAG 
@@ -89,9 +89,9 @@ void InitPorts(void)
 	RPOR10bits.RP20R  = 0b00111; // SDO1		<==> RP20 RC4
 	RPINR20bits.SDI1R = 21     ; // SDI1 		<==> RP21 RC5
 	
-	// UART AX12/CDS
-	RPOR9bits.RP18R = 0b00011;		//TX RP18 U1TX
-    RPINR18bits.U1RXR = 17;			//RX RP17 U1RXR
+	// UART CAN
+	RPOR1bits.RP2R = 0b00011;		//TX RP2 U1TX
+    RPINR18bits.U1RXR = 4;			//RX RP17 U1RXR
 	LATAbits.LATA3 = 1;	// 1 J'envoie et 0 je réceptionne	//Initialisation du sens de communication pour les AX12
     
 	// UART Lulu
