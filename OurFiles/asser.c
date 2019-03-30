@@ -5,6 +5,7 @@
 
 #define MOYENNE_GLISSANTE_CORRECTEUR 3
 
+double cor[N],cor_cap,cor_vit;
 unsigned char fin;
 unsigned int pwet;
 static double speed[N]={0},accel_def_debut[N],accel_def_fin[N];
@@ -132,6 +133,19 @@ void Avance(double distance, unsigned char wait)
 	}
 
 }
+
+void MotorPosition(double position, unsigned char id_moteur)
+{
+	flag_ligne=1;
+	first[id_moteur]=1;
+	motiontype = 0; // Avance
+	Motors_SetAcceleration(accel_def_ligne, id_moteur); 
+	Motors_SetSpeed(speed_def_ligne, id_moteur); 
+	targ_pos[id_moteur] = position;
+	Motors_Start(id_moteur);
+
+}
+
 
 void Calage(unsigned char reculer)
 {
@@ -682,7 +696,6 @@ void set_pid(double *coeffs)
 unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 {
 	unsigned char i,j;
-	double cor[N],cor_cap,cor_vit;
 	static double erreur_old[N]={0},erreur_cap=0,erreur_vit=0,erreur_cap_old=0 ,erreur_vit_old=0 ;
 	
 
@@ -733,147 +746,73 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 	if(pid_power)
 	{
 		
-		if(polaire)
+		for(i=0;i<N;i++)
 		{
-			// double pid cap + vitesse
-			// calcul de l'erreur en cap 		: erreur_cap = cons_cap - real_cap --> OK
-			// calcul de l'erreur en vitesse	: erreur_vit = cons_vit - vitesse 
-			
-			// calcul pid 						: cor_cap = ...
-			// calcul pid 						: cor_vit = ...
-
-			// Fusion de pid					: pwm1/2 = cor_vit +/- cor_cap
-
-			
-			//erreur_cap = cons_pos_ang - real_pos_ang;// ; // Calcul de l'erreur de cap
-			erreur_cap = targ_cap - real_pos_ang;// ; // Calcul de l'erreur de cap
-			
-			cor_cap = erreur_cap*kp_cap + (erreur_cap - erreur_cap_old)*kd_cap;
-			erreur_cap_old = erreur_cap; // Mise a jour necessaire pour le terme derive
-			
-			erreur_vit = cons_pos_lin - real_pos_lin;// ; // Calcul de l'erreur de vitesse
-			cor_vit = erreur_vit*kp_vit + (erreur_vit - erreur_vit_old)*kd_vit;
-			erreur_vit_old = erreur_vit; // Mise a jour necessaire pour le terme derive
-				
-			cor[0] = cor_vit - cor_cap;
-			cor[1] = cor_vit + cor_cap;
-
-			for(i=0;i<N;i++)
+			erreur[i] = targ_pos[i]* MM_INVSCALER - (double)raw_position[i];// ; // Calcul de l'erreur en pas codeur
+			if((motion[0] == 0) && (motion[1] == 0))
 			{
-				pwm_cor[i] = cor[i];
-				if(cor[i] > 4000)
-				{
-					saturation_pos[i]+=5;
-				}
-				else if(saturation_pos[i]>0)
-				{
-					saturation_pos[i]--;
-				}
-				if(cor[i] < -4000)
-				{
-					saturation_neg[i]+=5;
-				}
-				else if(saturation_neg[i]>0)
-				{	
-					saturation_neg[i]--;
-				}
-				
-				if(motiontype == 3)			
-				{
-					saturation_pos[0]=0;
-					saturation_neg[0]=0;
-					saturation_pos[1]=0;
-					saturation_neg[1]=0;
-				}
-	
-				if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
-				{
-					saturation_pos[0]=0;
-					saturation_neg[0]=0;
-					saturation_pos[1]=0;
-					saturation_neg[1]=0;
-					return 1;
-				}
+				if(pid_count < 1000)
+					pid_count++;
 			}
-			pwm(GAUCHE,-cor[0]);
-			pwm(DROITE,cor[1]);
-			cor[0] += 4000;
-			cor[1] += 4000;
-			if(cor[0]>8000) cor[0]=8000;
-			if(cor[1]>8000) cor[1]=8000;
-			if(cor[0]<0) cor[0]=0;
-			if(cor[1]<0) cor[1]=0;
-		}
-		else
-		{
-			for(i=0;i<N;i++)
+			else
 			{
-				erreur[i] = targ_pos[i]* MM_INVSCALER - (double)raw_position[i];// ; // Calcul de l'erreur en pas codeur
-				if((motion[0] == 0) && (motion[1] == 0))
-				{
-					if(pid_count < 1000)
-						pid_count++;
-				}
-				else
-				{
-					pid_count = 0;
-				}
-				
-				//if(pid_count == 1000) 	cor[i] = erreur[i]*(kp[i]-5);
-				/*else					*/cor[i] = erreur[i]*kp[i] + (erreur[i] - erreur_old[i])*kd[i];
-				
-				erreur_old[i] = erreur[i]; // Mise a jour necessaire pour le terme derive
-				pwm_cor[i] = cor[i];
-				
-				if(++ptr_cor_moy[i]>(MOYENNE_GLISSANTE_CORRECTEUR-1))	ptr_cor_moy[i] = 0;
-				cor_moy[i][ptr_cor_moy[i]]=cor[i];
-				cor[i]=0;
-				for(j=0;j<MOYENNE_GLISSANTE_CORRECTEUR;j++)
-					cor[i] += cor_moy[i][j];
-				cor[i]=cor[i]/MOYENNE_GLISSANTE_CORRECTEUR;
-				if(cor[i] > 4000)
-				{
-					saturation_pos[i]+=5;
-				}
-				else if(saturation_pos[i]>0)
-				{
-					saturation_pos[i]--;
-				}
-				if(cor[i] < -4000)
-				{
-					saturation_neg[i]+=5;
-				}
-				else if(saturation_neg[i]>0)
-				{	
-					saturation_neg[i]--;
-				}
-				
-				if(motiontype == 3)			
-				{
-					saturation_pos[0]=0;
-					saturation_neg[0]=0;
-					saturation_pos[1]=0;
-					saturation_neg[1]=0;
-				}
-	
-				if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
-				{
-					saturation_pos[0]=0;
-					saturation_neg[0]=0;
-					saturation_pos[1]=0;
-					saturation_neg[1]=0;
-					return 1;
-				}
+				pid_count = 0;
 			}
-			pwm(GAUCHE,-cor[0]);
-			pwm(DROITE,cor[1]);
-			cor[0] += 4000;
-			cor[1] += 4000;
-			if(cor[0]>8000) cor[0]=8000;
-			if(cor[1]>8000) cor[1]=8000;
-			if(cor[0]<0) cor[0]=0;
-			if(cor[1]<0) cor[1]=0;
+			
+			//if(pid_count == 1000) 	cor[i] = erreur[i]*(kp[i]-5);
+			/*else					*/cor[i] = erreur[i]*kp[i] + (erreur[i] - erreur_old[i])*kd[i];
+			
+			erreur_old[i] = erreur[i]; // Mise a jour necessaire pour le terme derive
+			pwm_cor[i] = cor[i];
+			
+			if(++ptr_cor_moy[i]>(MOYENNE_GLISSANTE_CORRECTEUR-1))	ptr_cor_moy[i] = 0;
+			cor_moy[i][ptr_cor_moy[i]]=cor[i];
+			cor[i]=0;
+			for(j=0;j<MOYENNE_GLISSANTE_CORRECTEUR;j++)
+				cor[i] += cor_moy[i][j];
+			cor[i]=cor[i]/MOYENNE_GLISSANTE_CORRECTEUR;
+			if(cor[i] > 4000)
+			{
+				saturation_pos[i]+=5;
+			}
+			else if(saturation_pos[i]>0)
+			{
+				saturation_pos[i]--;
+			}
+			if(cor[i] < -4000)
+			{
+				saturation_neg[i]+=5;
+			}
+			else if(saturation_neg[i]>0)
+			{	
+				saturation_neg[i]--;
+			}
+			
+			if(motiontype == 3)			
+			{
+				saturation_pos[0]=0;
+				saturation_neg[0]=0;
+				saturation_pos[1]=0;
+				saturation_neg[1]=0;
+			}
+
+			if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
+			{
+				saturation_pos[0]=0;
+				saturation_neg[0]=0;
+				saturation_pos[1]=0;
+				saturation_neg[1]=0;
+				return 1;
+			}
 		}
+		pwm(GAUCHE,-cor[0]);
+		pwm(DROITE,cor[1]);
+		cor[0] += 4000;
+		cor[1] += 4000;
+		if(cor[0]>8000) cor[0]=8000;
+		if(cor[1]>8000) cor[1]=8000;
+		if(cor[0]<0) cor[0]=0;
+		if(cor[1]<0) cor[1]=0;
 	}
 	buff_status[0][buff_status_ptr]   = cpu_status;
 	buff_status[1][buff_status_ptr]   = (unsigned int)cor[0];
@@ -889,7 +828,7 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 
 	value = valeur;
 
-	value = value / 1;
+	value = value / 2; // Attention bridage en cours
 
 
 	if(bridage)

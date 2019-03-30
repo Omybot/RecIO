@@ -71,6 +71,13 @@ unsigned int Periode_pince_gauche_basse = 0;//INIT_PINCE;
 unsigned int Valeur_Capteur_Couleur = 24;
 unsigned int Cpt_Tmr_Periode = 0;
 
+int PiloteStop(unsigned char id_moteur,unsigned char stopmode)
+{
+	Motors_Stop(stopmode,id_moteur);		
+	return 1;
+}
+
+
 void delay(void)
 {
     long i = 10;
@@ -783,30 +790,6 @@ int PiloteVirage(unsigned char reculer, unsigned char direction, double rayon, d
 	return 1;
 }
 
-// Stoppe le robot
-// mode : mode de stop (Abrupt, Smooth, Freely)
-int PiloteStop(unsigned char stopmode)
-{
-	int distanceRestante;
-	Trame envoiReste;
-	static BYTE messReste[2];
-	messReste[0] = 0xC4;
-	messReste[1] = 0x60;
-	envoiReste.nbChar = 4;
-
-	distanceRestante = (int)Stop(stopmode);
-
-	messReste[2] = distanceRestante >> 8;
-	messReste[3] = distanceRestante & 0xFF;
-
-	//envoiReste.message = messReste;
-
-	while(Motors_IsRunning(MOTEUR_GAUCHE) || Motors_IsRunning(MOTEUR_DROIT));
-
-	EnvoiUserUdp(envoiReste);
-
-	return 1;
-}
 
 // Recallage du robot
 // s : sens du recallage (Avant ou Arriere)
@@ -1404,9 +1387,6 @@ Trame AnalyseTrame(Trame t)
 		case CMD_ACCELERATION_MOTEUR:
 			break;
 
-		case CMD_MOTEUR_POSITION:
-			break;
-
 
 		case CMD_ENVOI_BAUDRATE_MICRO:
 			param1 = t.message[2];
@@ -1651,6 +1631,18 @@ Trame AnalyseTrame(Trame t)
 		case CMD_DEMANDE_CAPTEUR_COULEUR:
       		retour = CouleurRGB(t.message[2]);
 			break;
+		case CMD_STOP_MOTEUR:
+			param1 = t.message[2];							// Id moteur
+			param2 = t.message[3];							// StopMode
+			PiloteStop((unsigned char)param1,(unsigned char)param2);
+		break;
+		case CMD_MOTEUR_POSITION:
+			param1 = t.message[2];							// Id moteur
+			param2 = t.message[3] * 256 + t.message[4];		// Position
+			MotorPosition(param2,(unsigned char)param1);
+
+			break;
+		
 	}
 	return retour;
 }

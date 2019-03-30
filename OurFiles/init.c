@@ -101,6 +101,12 @@ void InitPorts(void)
 	// Capteur de couleur OUT  
 	RPINR7bits.IC1R 	= 4;		//RP4
 
+	RPINR14bits.QEA1R = 9;			// QEIA1	<==> RP9 
+	RPINR14bits.QEB1R = 8;			// QEIB1	<==> RP8 
+	RPINR16bits.QEA2R = 24;			// QEIA2	<==> RP24 
+	RPINR16bits.QEB2R = 25;			// QEIB2	<==> RP25
+
+
 	// Initialisation des pins pwms
 	MOT1L = 0;
 	MOT1H = 0;
@@ -227,7 +233,7 @@ void InitQEI(void)
 {
 	QEI1CONbits.QEIM  = 0b111;
 	QEI2CONbits.QEIM  = 0b111;
-	QEI1CONbits.SWPAB = 1;
+	QEI1CONbits.SWPAB = 0;
 	QEI2CONbits.SWPAB = 0;
 	POS1CNT = 0x0000;
 	POS2CNT = 0x0000;

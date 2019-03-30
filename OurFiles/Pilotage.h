@@ -5,6 +5,9 @@
 #include "UserUdp.h"
 
 
+int PiloteStop(unsigned char stopmode,unsigned char id_moteur);
+
+
 static Trame trameServo;
 static BYTE msgServo[60];
 
@@ -75,7 +78,7 @@ int PiloteAvancer(double distance);
 int PiloteReculer(double distance);
 int PilotePivoter(double angle, Cote direction);
 int PiloteVirage(unsigned char reculer, unsigned char direction, double rayon, double angle);
-int PiloteStop(unsigned char stopmode);
+int PiloteStop(unsigned char id_moteur, unsigned char stopmode);
 int PiloteRecallage(Sens s);
 int PiloteAvancerEtapes(int nombreEtapes, Etape etape);
 int PiloteValiderEtapes(int numEtape);
@@ -175,6 +178,7 @@ void PiloteRecalageStepper(void);
 #define	CMD_ACCELERATION_PIVOT			0x35
 #define CMD_ENVOI_PID 					0x36
 #define CMD_OFFSETASSERV				0x37
+#define CMD_STOP_MOTEUR					0x69
 
 // Debug asservissement
 #define CMD_DEMANDE_BUFF_POSITION		0x43

@@ -86,6 +86,7 @@ unsigned int Cpt_Tmr2_Capteur_Couleur = 0;
 unsigned int Tab_Capteur_Couleur[8] = {0};
 unsigned char etat_Capteur_Couleur = 0,alim_capteur_couleur=0;
 
+
 void _ISR __attribute__((__no_auto_psv__)) _AddressError(void)
 {
     Nop();
@@ -146,6 +147,9 @@ int main(void)
 	Init_Input_Capture();
 	InitADC();
 	InitDMA();
+
+	InitProp();
+
 
 	DelayMs(100); 
 

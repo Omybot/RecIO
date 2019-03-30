@@ -84,6 +84,7 @@ unsigned char Motors_Task(void);
 void manual_pid(double moteurga, double moteurdr);
 void InitProp(void);
 void Avance(double distance, unsigned char wait);
+void MotorPosition(double distance, unsigned char id_moteur);
 void Pivot(double angle,unsigned char wait);
 void Virage(unsigned char cote, double rayon, double angle, unsigned char wait);
 double Stop(unsigned char stopmode);
