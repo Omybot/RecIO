@@ -1642,7 +1642,8 @@ Trame AnalyseTrame(Trame t)
 			MotorPosition(param2,(unsigned char)param1);
 
 			break;
-		
+		default :
+			return retour;
 	}
 	return retour;
 }
