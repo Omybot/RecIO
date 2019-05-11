@@ -829,10 +829,6 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 	double value;
 
 	value = valeur;
-
-	value = value / 2; // Attention bridage en cours
-
-
 	if(bridage)
 	{
 		if(value >  2200) value =  2200;
@@ -841,12 +837,6 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 
 	if(value >  4000) value =  4000;
 	if(value < -4000) value = -4000;	
-
-	value = value * 2;
-	
-	
-
-	
 
 	switch(motor)
 	{
