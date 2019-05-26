@@ -192,6 +192,8 @@ void PiloteRecalageStepper(void);
 #define CMD_ENVOI_BAUDRATE_MICRO		0x61
 
 // Actionneurs
+#define CMD_MOTEUR_ORIGIN				0x63
+#define CMD_MOTEUR_INIT					0x64
 #define TRAME_PILOTAGE_ONOFF 			0x65
 #define CMD_MOTEUR_POSITION				0x66
 #define CMD_VITESSE_MOTEUR				0x67

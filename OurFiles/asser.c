@@ -544,11 +544,18 @@ unsigned char Motors_Task(void)
 	}
 	else
 	{
-		if(pid(1,cons_pos,real_pos)==1) // 150µs Max retourne 1 en cas de saturation hacheur
+		switch(pid(1,cons_pos,real_pos)==1) // 150µs Max retourne 1 en cas de saturation hacheur
 		{
-			Stop(FREELY);
-			retour = FLAG_BLOCAGE;
-			return retour;
+			case 1 : 
+				Motors_Stop(FREELY,0);
+				retour = FLAG_BLOCAGE0;
+				return retour;
+			case 2 : 
+				Motors_Stop(FREELY,1);
+				retour = FLAG_BLOCAGE1;
+				return retour;
+			default: 
+				break;
 		}
 		
 		
@@ -635,7 +642,8 @@ unsigned char Motors_Task(void)
 				{
 					motion[i] = 0;
 					speed[i]  = 0;
-					if(i==0) retour = FLAG_ENVOI; // 10/05/2013 ajout du if(i==0) 
+					if(i==0) retour = FLAG_ENVOI0; // 10/05/2013 ajout du if(i==0) 
+					if(i==1) retour = FLAG_ENVOI1; // 10/05/2013 ajout du if(i==0) 
 				}
 				break;
 			default :	
@@ -661,12 +669,21 @@ unsigned char Motors_Task(void)
 	else if(polaire!=1)
 	{
 		for(i=0;i<N;i++)
-			if(fabs(cons_pos[i] - real_pos[i]) > 150)
+			if(fabs(cons_pos[i] - real_pos[i]) > 20)
 			{
 				if(cpt_blocage[i]++>20 && pid_power==1)
 				{
-					Stop(FREELY);
-					retour = FLAG_BLOCAGE;
+					
+					if(i==0) 
+					{
+						Motors_Stop(FREELY,0);
+						retour = FLAG_BLOCAGE0;
+					}
+					if(i==1) 
+					{
+						Motors_Stop(FREELY,1);
+						retour = FLAG_BLOCAGE1;
+					}
 					return retour;
 				}
 			}
@@ -798,13 +815,15 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 				saturation_neg[1]=0;
 			}
 
-			if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
+//			if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
+			if((saturation_pos[i]>5000)||(saturation_neg[i]>5000))
 			{
 				saturation_pos[0]=0;
 				saturation_neg[0]=0;
 				saturation_pos[1]=0;
 				saturation_neg[1]=0;
-				return 1;
+				if(i==0)  return 1;
+				if(i==1)  return 2;
 			}
 		}
 		pwm(GAUCHE,-cor[0]);
@@ -829,14 +848,18 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 	double value;
 
 	value = valeur;
-	if(bridage)
+
+	/*if(bridage)
 	{
 		if(value >  2200) value =  2200;
 		if(value < -2200) value = -2200;	
-	}
+	}*/
 
 	if(value >  4000) value =  4000;
 	if(value < -4000) value = -4000;	
+
+	value = value * 2; // Due au changement de hacheur LMD18220 ==> Freescale 
+
 
 	switch(motor)
 	{
@@ -857,7 +880,7 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 						}
 						break;
 		case AVANT:
-		case GAUCHE: 	
+		case GAUCHE: 	// Doigt Avant
 		case MOTEUR_2:	if(motiontype == 3)
 							{
 								if(value >  2000) value =  2000;
@@ -880,13 +903,14 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 						}
 						break;
 		case ARRIERE:
-		case DROITE:
-		case MOTEUR_3:		if(motiontype == 3)
-							{
-								if(value >  2000) value =  2000;
-								if(value < -2000) value = -2000;	
-						
-							}
+		case DROITE:	// Doigt Arriere
+		case MOTEUR_3:	value=value/2; // bridage moteur 6V
+						if(motiontype == 3)
+						{
+							if(value >  2000) value =  2000;
+							if(value < -2000) value = -2000;	
+					
+						}
 						if(value > 0)	// Moteur Gauche
 						{
 							PWM1CON1bits.PEN2L = 0;

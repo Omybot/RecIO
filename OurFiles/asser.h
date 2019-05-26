@@ -5,9 +5,9 @@
 
 
 #define N				2						// Nombre de moteurs
-#define DEFAULT_KP		60						// Coefficient proporionnel 
+#define DEFAULT_KP		600						// Coefficient proporionnel 
 #define DEFAULT_KI		0						// Coefficient integral (inverse !)
-#define DEFAULT_KD		400						// Coefficient derive
+#define DEFAULT_KD		1000						// Coefficient derive
 #define CODEUR			1024 					// Nombre de pas par tour moteur (sans le ratio x4)
 #define REDUCTEUR		1						// Reducteur utilise en sortie d'arbre moteur (=1 si roue codeuse indépendante)
 #define DIAMETRE_ROUE 	35*0.845						// Diametre de la roue motrice (ou roue codeuse si indépendante) en mm 
@@ -16,7 +16,7 @@
 #define COEFF_ROUE		1.084082646			// Coeff d'ajustement pour le diametre de la roue
 #define MM_SCALER		COEFF_ROUE*DIAMETRE_ROUE*PI/(4*CODEUR*REDUCTEUR) // Formule de conversion [pas]<==>[mm]
 #define MM_INVSCALER	4*CODEUR*REDUCTEUR/(COEFF_ROUE*DIAMETRE_ROUE*PI)
-#define DEFAULT_SPEED	50						// Vitesse par défaut en mm/s
+#define DEFAULT_SPEED	75						// Vitesse par défaut en mm/s
 #define DEFAULT_ACCEL	500					// Acceleration par défaut en mm/s^2
 #define ERROR_ALLOWED	0						// En cas de sifflement moteur intempestif (en pas)
 
@@ -78,6 +78,10 @@
 #define FLAG_ENVOI		0x10
 #define FLAG_CALAGE		0x30
 #define FLAG_BLOCAGE	0x40
+#define FLAG_ENVOI0		0x50
+#define FLAG_ENVOI1		0x60
+#define FLAG_BLOCAGE0	0x70
+#define FLAG_BLOCAGE1	0x80
 
 
 unsigned char Motors_Task(void);

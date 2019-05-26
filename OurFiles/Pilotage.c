@@ -14,6 +14,8 @@
 #define LED LATAbits.LATA8
 #define S2 LATAbits.LATA10
 #define S3 LATAbits.LATA7
+
+extern int revolutions[N];
 //	Extern Capteur Couleur
 extern unsigned int Tab_Capteur_Couleur[8];
 extern unsigned char alim_capteur_couleur;
@@ -1640,8 +1642,25 @@ Trame AnalyseTrame(Trame t)
 			param1 = t.message[2];							// Id moteur
 			param2 = t.message[3] * 256 + t.message[4];		// Position
 			MotorPosition(param2,(unsigned char)param1);
-
-			break;
+		break;
+		case CMD_MOTEUR_ORIGIN:
+			param1 = t.message[2];							// Id moteur
+			MotorPosition(-500,(unsigned char)param1);
+		break;
+		case CMD_MOTEUR_INIT:
+			param1 = t.message[2];							// Id moteur
+			switch(param1)
+			{
+				case 0:
+					POS1CNT=0;
+					revolutions[0]=0;
+				break;
+				case 1:
+					POS2CNT=0;
+					revolutions[1]=0;
+				break;
+			}
+		break;
 		default :
 			return retour;
 	}

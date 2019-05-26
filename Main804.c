@@ -63,7 +63,7 @@ unsigned char jackAvant = 0,trame_recu[TAILLE_MSG_UART],recu_nbr,timeout_servo;
 unsigned char motor_flag=0,datalogger_blocker=0;
 double position_lock;
 unsigned int datalogger_counter=0,flag=0,courrier=0,PID_ressource_used;
-unsigned char flag_envoi=0,flag_blocage=0,flag_calage=0,flag_servo=0,detection_pompe=0;
+unsigned char flag_envoi0=0,flag_blocage0=0,flag_envoi1=0,flag_blocage1=0,flag_servo=0,detection_pompe=0;
 
 long lcourant;
 unsigned int cpt_20mscourant;
@@ -119,14 +119,47 @@ int main(void)
 	messUART2[1] = CMD_RECEPTION_UART2;
 	envoiUART2.message = messUART2;
 	envoiUART2.nbChar = 53;
+
+	Trame envoiFin0;
+	static BYTE mess0[3];
+	mess0[0] = UDP_ID;
+	mess0[1] = 0x70; // envoiFin
+	mess0[2] = 0; // id moteur
+	envoiFin0.message = mess0;
+	envoiFin0.nbChar = 3;
+
+	Trame envoiFin1;
+	static BYTE mess1[3];
+	mess1[0] = UDP_ID; 
+	mess1[1] = 0x70; // envoiFin
+	mess1[2] = 1; // id moteur
+	envoiFin1.message = mess1;
+	envoiFin1.nbChar = 3;
+
+	Trame envoiBlocage0;
+	static BYTE messblocage0[3];
+	messblocage0[0] = UDP_ID;
+	messblocage0[1] = 0x71; // envoiBlocage
+	messblocage0[2] = 0; // id moteur
+	envoiBlocage0.message = messblocage0;
+	envoiBlocage0.nbChar = 3;
 	
-	
+	Trame envoiBlocage1;
+	static BYTE messblocage1[3];
+	messblocage1[0] = UDP_ID;
+	messblocage1[1] = 0x71; // envoiBlocage
+	messblocage1[2] = 1; // id moteur
+	envoiBlocage1.message = messblocage1;
+	envoiBlocage1.nbChar = 3;
+		
+
 	InitClk(); 		// Initialisation de l'horloge
 	InitPorts(); 	// Initialisation des ports E/S
 	Init_Timer();	// Initialisation Timer2,Timer4 & Timer5
 	InitQEI(); 		// Initialisation des entrées en quadrature
 	InitPWM();		// Configuration du module PWM 
 
+	
 	// Initialize stack-related hardware components that may be 
 	// required by the UART configuration routines
     TickInit();
@@ -166,6 +199,27 @@ int main(void)
 
 	while(1)
   	{
+		if(flag_envoi0) 
+		{	
+			EnvoiUserUdp(envoiFin0);
+			flag_envoi0 = 0;
+		}
+		if(flag_envoi1) 
+		{	
+			EnvoiUserUdp(envoiFin1);
+			flag_envoi1 = 0;
+		}
+		if(flag_blocage0)
+		{
+			EnvoiUserUdp(envoiBlocage0);
+			flag_blocage0 = 0;
+		}
+		if(flag_blocage1)
+		{
+			EnvoiUserUdp(envoiBlocage1);
+			flag_blocage1 = 0;
+		}
+
 		if((ptr_write_buffer_uart != ptr_read_buffer_uart) && U2STAbits.TRMT != 0)
 		{
 			// Gestion envoi trame
@@ -353,20 +407,25 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 	timeout_servo++;
 	timeout_uart2++;
 
-	if(motor_flag == 0x10)
+	if(motor_flag == FLAG_BLOCAGE0)
 	{
 		motor_flag=0;
-		flag_envoi=1;
+		flag_blocage0=1;
 	}
-	if(motor_flag == 0x30)
+	if(motor_flag == FLAG_BLOCAGE1)
 	{
 		motor_flag=0;
-		flag_calage=1;
+		flag_blocage1=1;
 	}
-	if(motor_flag == 0x40)
+	if(motor_flag == FLAG_ENVOI0)
 	{
 		motor_flag=0;
-		flag_blocage=1;
+		flag_envoi0=1;
+	}
+	if(motor_flag == FLAG_ENVOI1)
+	{
+		motor_flag=0;
+		flag_envoi1=1;
 	}
 	cpu_status = (TMR4); //Previous value TMR4
 
