@@ -66,7 +66,7 @@ double accel_def_pivot=DEFAULT_ACCEL;
 double accel_def_ligne_debut=DEFAULT_ACCEL;
 double accel_def_ligne_fin=DEFAULT_ACCEL;
 
-unsigned char pid_power=0,motion[N]={0},flagdefinehome;
+unsigned char pid_power[N]={0},motion[N]={0},flagdefinehome;
 
 /*************************** Couche utilisateur ***************************/
 
@@ -289,7 +289,7 @@ void Motors_Stop(unsigned char stopmode, unsigned char moteur)
 {
 	unsigned char stopmode_used;
 	stopmode_used = stopmode;
-	if(stopmode == SMOOTH && pid_power == 0) // Derogation, on force un dual abrupt dans ce cas la
+	if(stopmode == SMOOTH && pid_power[moteur] == 0) // Derogation, on force un dual abrupt dans ce cas la
 	{
 		stopmode_used = ABRUPT;
 		speed[0]  = 0;
@@ -311,18 +311,18 @@ void Motors_Stop(unsigned char stopmode, unsigned char moteur)
 		case FREELY :	cons_pos[moteur] = real_pos[moteur]; // Commande stop FREELY
 						targ_pos[moteur] = real_pos[moteur]; // Commande stop FREELY
 						motion[moteur] = 0;
-						pid_power = 0;
+						pid_power[moteur] = 0;
 						pwm(moteur,0);
 						break;
 		case SMOOTH :	cons_pos[moteur] = real_pos[moteur]; // Commande stop SMOOTH
 						targ_pos[moteur] = real_pos[moteur]; // Commande stop SMOOTH
 						if(motion[moteur]!=0) motion[moteur] = 30;
-						pid_power = 1;
+						pid_power[moteur] = 1;
 						break;
 		case ABRUPT :	cons_pos[moteur] = real_pos[moteur]; // Commande stop ABRUPT
 						targ_pos[moteur] = real_pos[moteur]; // Commande stop ABRUPT
 						motion[moteur] = 0;
-						pid_power = 1;						
+						pid_power[moteur] = 1;						
 						break;
 		default :		break;
 	}
@@ -374,10 +374,14 @@ void Motors_SetSpeed_Ligne(double vitesse)
 
 void Motors_Power(unsigned char power)
 {
-	pid_power = power;
-	if(pid_power == ON)
+	pid_power[0] = power;
+	if(pid_power[0] == ON)
 	{
 		cons_pos[0] = real_pos[0];
+	}
+	pid_power[1] = power;
+	if(pid_power[1] == ON)
+	{
 		cons_pos[1] = real_pos[1];
 	}
 }
@@ -671,7 +675,7 @@ unsigned char Motors_Task(void)
 		for(i=0;i<N;i++)
 			if(fabs(cons_pos[i] - real_pos[i]) > 20)
 			{
-				if(cpt_blocage[i]++>20 && pid_power==1)
+				if(cpt_blocage[i]++>20 && pid_power[i]==1)
 				{
 					
 					if(i==0) 
@@ -759,15 +763,16 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 	cor[0] = 0;
 	cor[1] = 0;
 
-	
-	if(pid_power)
+	for(i=0;i<N;i++)
 	{
-		erreur[0] = targ_pos[0]*0.855* MM_INVSCALER - (double)raw_position[0];// ; // Calcul de l'erreur en pas codeur
-		erreur[1] = targ_pos[1]* MM_INVSCALER - (double)raw_position[1];// ; // Calcul de l'erreur en pas codeur
-			
-		for(i=0;i<N;i++)
+		if(pid_power[i])
 		{
-			
+			if(i==0)
+				erreur[0] = targ_pos[0]*0.855* MM_INVSCALER - (double)raw_position[0];// ; // Calcul de l'erreur en pas codeur
+			else
+				erreur[1] = targ_pos[1]* MM_INVSCALER - (double)raw_position[1];// ; // Calcul de l'erreur en pas codeur
+		
+	
 			if((motion[0] == 0) && (motion[1] == 0))
 			{
 				if(pid_count < 1000)
@@ -826,14 +831,13 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 				if(i==1)  return 2;
 			}
 		}
-		pwm(GAUCHE,-cor[0]);
-		pwm(DROITE,cor[1]);
-		cor[0] += 4000;
-		cor[1] += 4000;
-		if(cor[0]>8000) cor[0]=8000;
-		if(cor[1]>8000) cor[1]=8000;
-		if(cor[0]<0) cor[0]=0;
-		if(cor[1]<0) cor[1]=0;
+		if(i==0)
+			pwm(GAUCHE,-cor[0]);
+		else
+			pwm(DROITE,cor[1]);
+		cor[i] += 4000;
+		if(cor[i]>8000) cor[i]=8000;
+		if(cor[i]<0) cor[i]=0;
 	}
 	buff_status[0][buff_status_ptr]   = cpu_status;
 	buff_status[1][buff_status_ptr]   = (unsigned int)cor[0];
