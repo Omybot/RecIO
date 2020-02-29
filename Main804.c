@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "OurFiles/Pilotage.h"
-#include "OurFiles/CDS5516.h"
 #include "OurFiles/FonctionsUc.h"
 #include "OurFiles/Stepper.h"
 
@@ -59,7 +58,7 @@ extern double cons_pos[N];
 extern double real_pos[N];
 extern unsigned char scan;
 
-unsigned char jackAvant = 0,trame_recu[TAILLE_MSG_UART],recu_nbr,timeout_servo;
+unsigned char jackAvant = 0,recu_nbr,timeout_servo;
 unsigned char motor_flag=0,datalogger_blocker=0;
 double position_lock;
 unsigned int datalogger_counter=0,flag=0,courrier=0,PID_ressource_used;
@@ -70,16 +69,6 @@ unsigned int cpt_20mscourant;
 
 //Variable Pwm_Servos_Timer2
 unsigned int Cpt_Timer4 = 0;
-
-//Variable Capteur de vitesse
-unsigned char flag_capteur_vitesse;
-double vitesse_canon;
-unsigned int consigne_canon;
-unsigned int cpt_capteur_vitesse,capteur_vitesse;
-unsigned char desactive_interrupt;
-unsigned int prd_asser_canon=50,electrovanne=0;
-
-unsigned char tir=0,tir_power=0;
 
 //Variable Capteur Couleur
 unsigned int Cpt_Tmr2_Capteur_Couleur = 0;
@@ -100,18 +89,9 @@ void _ISR __attribute__((__no_auto_psv__)) _StackError(void)
 
 int main(void)
 {
-	
 	unsigned char i;
 	
 	Trame trame;		
-	
-	Trame envoiUART;
-	static BYTE messUART[250];
-	messUART[0] = 0xC4;
-	messUART[1] = CMD_REPONSE_LIDAR;//CMD???;
-	messUART[2] = 0xFE;
-	envoiUART.message = messUART;
-	envoiUART.nbChar = 53;
 
 	Trame envoiUART2;
 	static BYTE messUART2[50];
@@ -159,7 +139,6 @@ int main(void)
 	InitQEI(); 		// Initialisation des entrées en quadrature
 	InitPWM();		// Configuration du module PWM 
 
-	
 	// Initialize stack-related hardware components that may be 
 	// required by the UART configuration routines
     TickInit();
@@ -176,7 +155,6 @@ int main(void)
 	
 	Init_Interrupt_Priority();							
 	InitUART();	
-	Init_Servos();
 	Init_Input_Capture();
 	InitADC();
 	InitDMA();

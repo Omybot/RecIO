@@ -10,7 +10,7 @@
 #define UART_BUFFER_SIZE 100
 #define UART_BUFFER_SIZE2 100
 
-//Define Capteur Couleur
+// Define Capteur Couleur
 #define LED LATAbits.LATA8
 #define S2 LATAbits.LATA10
 #define S3 LATAbits.LATA7
@@ -24,7 +24,6 @@ extern 	unsigned char flag_envoi_uart,buffer_envoi_uart[UART_BUFFER_SIZE],ptr_wr
 extern 	unsigned char flag_envoi_uart2,buffer_envoi_uart2[UART_BUFFER_SIZE2],ptr_write_buffer_uart2;
 
 // ATTENTION /!\ Ces fonctions ne doivent pas �tre bloquantes
-extern unsigned char detection_pompe;
 extern unsigned int position_ascenseur_gauche,position_ascenseur_droite,courant;
 extern unsigned char jackAvant,tir,tir_power;
 extern unsigned int capteur_vitesse;
@@ -40,7 +39,6 @@ extern long buff_position[N][256];
 extern unsigned char buff_status_ptr,last_send_status_ptr;
 extern unsigned int buff_status[3][64];
 extern long raw_position[2];
-double BAUDRATE, BRGVAL, FCY = 40000000;
 extern double bridage;
 extern double erreur[N];
 extern double targ_pos[N];
@@ -63,12 +61,6 @@ extern unsigned char flag_capteur_vitesse;
 
 unsigned char scan;
 
-//Variable extern pour pince fruitmouth
-unsigned int Periode_pince_droite_haute = 0;//INIT_PINCE;
-unsigned int Periode_pince_gauche_haute = 0;//INIT_PINCE;
-unsigned int Periode_pince_droite_basse = 0;//INIT_PINCE;
-unsigned int Periode_pince_gauche_basse = 0;//INIT_PINCE;
-
 //Variable Capteur Couleur
 unsigned int Valeur_Capteur_Couleur = 24;
 unsigned int Cpt_Tmr_Periode = 0;
@@ -78,7 +70,6 @@ int PiloteStop(unsigned char id_moteur,unsigned char stopmode)
 	Motors_Stop(stopmode,id_moteur);		
 	return 1;
 }
-
 
 void delay(void)
 {
@@ -118,114 +109,29 @@ void __attribute__((__interrupt__,__auto_psv__)) _IC1Interrupt(void)
 		Valeur_Capteur_Couleur = (PR3 - t1) + t2;
 }
 
-// DEBUG
-Trame PiloteDebug0(Trame t)
+Trame Retour_Capteur_Onoff(unsigned char id_capteur)
 {
-	EnvoiUART2(t);
-	return t;
-}
+	Trame Etat_Valeurs;
+	static BYTE Valeurs[4];
+	Etat_Valeurs.nbChar = 4;
+	
+	Valeurs[0] = UDP_ID;
+	Valeurs[1] = CMD_REPONSE_CAPTEUR_ONOFF;
+	Valeurs[2] = id_capteur;
+	switch(id_capteur)
+	{
+		case VACUOSTAT_BACK:
+			Valeurs[3] = !PORTCbits.RC1;
+			break;
+		case VACUOSTAT_FRONT:
+			Valeurs[3] = PORTCbits.RC2;
+			break;
+	}
+	
+	
+	Etat_Valeurs.message = Valeurs;
 
-Trame PiloteDebug1(Trame t)
-{
-	return t;
-}
-
-Trame PiloteDebug2(Trame t)
-{
-	static int nbChar = 5;
-	BYTE timePeriod[nbChar];
-	BYTE colorCtrl = t.message[3];
-
-	S2 = (colorCtrl & 0x04)>>2;
-	S3 = (colorCtrl & 0x02)>>1;
-	LED = colorCtrl & 0x01;
-	timePeriod[0] = 0xC4;
-	timePeriod[1] = CMD_DEBUG;
-	timePeriod[2] = 0x02;
-	timePeriod[3] = Valeur_Capteur_Couleur>>8;
-	timePeriod[4] = Valeur_Capteur_Couleur&0x00FF;
-
-	t.nbChar  = nbChar;
-	t.message = timePeriod;
-
-	return t;
-}
-
-Trame PiloteDebug3(Trame t)
-{
-
-	return t;
-}
-
-Trame PiloteDebug4(Trame t)
-{
-	return t;
-}
-
-Trame PiloteDebug5(Trame t)
-{
-	return t;
-}
-
-Trame PiloteDebug6(Trame t)
-{
-	return t;
-}
-
-Trame PiloteDebug7(Trame t)
-{
-	return t;
-}
-
-Trame PiloteDebug8(Trame t)
-{
-	return t;
-}
-
-Trame PiloteDebug9(Trame t)
-{
-	return t;
-}
-
-
-
-void Init_Servos(void)
-{
-	// TODO
-}
-
-//Initalisation Alimentation
-void Init_Alimentation(void)
-{
-}
-
-//Fonction qui renvoie sous forme de trame(UDP) la couleur de l'equipe
-Trame Couleur_Equipe(void)
-{
-	Trame Etat_Couleur_Equipe;
-	static BYTE Couleur[3];
-	Etat_Couleur_Equipe.nbChar = 3;
-
-	Couleur[0] = 0xC4;
-	Couleur[1] = CMD_REPONSE_COULEUR_EQUIPE;
-	Couleur[2] = MATCH_COULEUR;
-
-	Etat_Couleur_Equipe.message = Couleur;
-
-	return Etat_Couleur_Equipe;
-}
-
-Trame Presence_Bouchon(void)
-{
-	Trame Etat_Bouchon;
-	static BYTE Bouchon[4];
-	Etat_Bouchon.nbChar = 4;
-
-	Bouchon[0] = 0xC4;
-
-	Etat_Bouchon.message = Bouchon;
-
-	return Etat_Bouchon;
+	return Etat_Valeurs;
 }
 
 Trame Retour_Valeurs_Analogiques(void)
@@ -259,104 +165,6 @@ Trame Retour_Valeurs_Analogiques(void)
 	Etat_Valeurs.message = Valeurs;
 
 	return Etat_Valeurs;
-}
-
-
-Trame Presence_Feu(unsigned char id_feu)
-{
-	Trame Etat_Feu;
-	static BYTE Feu[4];
-	Etat_Feu.nbChar = 4;
-
-	Feu[0] = 0xC4;
-	Feu[1] = CMD_REPONSE_CAPTEUR_ONOFF;
-
-
-	Etat_Feu.message = Feu;
-
-	return Etat_Feu;
-}
-
-
-Trame Presence_Jack(void)
-{
-	Trame Etat_Jack;
-	static BYTE Jack[3];
-	Etat_Jack.nbChar = 3;
-
-	Jack[0] = 0xC4;
-	Jack[1] = CMD_REPONSE_PRESENCE_JACK;
-	Jack[2] = !MATCH_JACK;
-
-	Etat_Jack.message = Jack;
-
-	return Etat_Jack;
-}
-
-//Set baud rate microcontroleur
-void PiloteUARTSetBaudrateMicro(unsigned char newBaud)
-{
-	switch(newBaud)
-	{
-		case 207: //9600 Baud
-			UBRVALUE = UXBRG_AX12_9600;
-			CDS5516SetUXBRG(UXBRG_AX12_9600);
-			break;
-		case 103: //19200 Baud
-			UBRVALUE = UXBRG_AX12_19200;
-			CDS5516SetUXBRG(UXBRG_AX12_19200);
-			break;
-		case 34: //57600 Baud
-			UBRVALUE = UXBRG_AX12_57600;
-			CDS5516SetUXBRG(UXBRG_AX12_57600);
-			break;
-		case 16: //115200 Baud
-			UBRVALUE = UXBRG_AX12_115200;
-			CDS5516SetUXBRG(UXBRG_AX12_115200);
-			break;
-		case 9: //200000 Baud
-			UBRVALUE = UXBRG_AX12_200000;
-			CDS5516SetUXBRG(UXBRG_AX12_200000);
-			break;
-		case 7: //250000 Baud
-			UBRVALUE = UXBRG_AX12_250000;
-			CDS5516SetUXBRG(UXBRG_AX12_250000);
-			break;
-		case 4: //400000 Baud
-			UBRVALUE = UXBRG_AX12_400000;
-			CDS5516SetUXBRG(UXBRG_AX12_400000);
-			break;
-		case 3: //500000 Baud
-			UBRVALUE = UXBRG_AX12_500000;
-			CDS5516SetUXBRG(UXBRG_AX12_500000);
-			break;
-		case 1: //1000000 Baud
-			UBRVALUE = UXBRG_AX12_1000000;
-			CDS5516SetUXBRG(UXBRG_AX12_1000000);
-			break;
-	}
-}
-
-Trame PiloteGotoXY(int x,int y, unsigned char x_negatif, unsigned char y_negatif)
-{
-	//double x,y,teta;
-	Trame trame;
-	static BYTE tableau[6];
-	trame.nbChar = 6;
-
-	GotoXY((double)x,(double)y,0);
-
-	tableau[0] = 1;
-	tableau[1] = 0x13;
-	tableau[2] = (int)xyangle>>8;
-	tableau[3] = (int)xyangle&0x00FF;
-	tableau[4] = (int)xydistance>>8;
-	tableau[5] = (int)xydistance&0x00FF;
-
-	trame.message = tableau;
-
-	return trame;
-
 }
 
 unsigned int Send_Variable_Capteur_Couleur(void){
@@ -718,10 +526,6 @@ Trame PiloteGetBuffPosition()
 	return trame;
 }
 
-void PiloteAlimentation(char onOff)
-{
-}
-
 int PiloteVitesse(unsigned int id, unsigned int sens, unsigned int vitesse)
 {
 	double vit = (double)vitesse;
@@ -821,464 +625,12 @@ int PiloteOffsetAsserv(int x, int y, int teta)
 	return 1;
 }
 
-Trame PiloteServoDemandeConfigAlarmeLED(char id)
-{
-	int config = CDS5516DemandeConfigAlarmeLED(103, id);
-	trameServo.nbChar = 11;
-	msgServo[2] = CMD_SERVO_RETOUR_CFG_ALARME_LED;
-	msgServo[3] = id;
-	if(config & 0b0000001)
-		msgServo[4] = 1;
-	else
-		msgServo[4] = 0;
-	if(config & 0b0000010)
-		msgServo[5] = 1;
-	else
-		msgServo[5] = 0;
-	if(config & 0b0000100)
-		msgServo[6] = 1;
-	else
-		msgServo[6] = 0;
-	if(config & 0b0001000)
-		msgServo[7] = 1;
-	else
-		msgServo[7] = 0;
-	if(config & 0b0010000)
-		msgServo[8] = 1;
-	else
-		msgServo[8] = 0;
-	if(config & 0b0100000)
-		msgServo[9] = 1;
-	else
-		msgServo[9] = 0;
-	if(config & 0b1000000)
-		msgServo[10] = 1;
-	else
-		msgServo[10] = 0;
-
-	return trameServo;
-}
-
-//Stepper
-void PiloteRecalageStepper(void){
-
-	InitPosStepper();
-}
-
-Trame PiloteServoDemandeConfigAlarmeShutdown(char id)
-{
-	int config = CDS5516DemandeConfigAlarmeShutdown(103, id);
-	trameServo.nbChar = 11;
-	msgServo[2] = CMD_SERVO_RETOUR_CFG_ALARME_SHUTDOWN;
-	msgServo[3] = id;
-
-	if(config & 0b0000001)
-		msgServo[4] = 1;
-	else
-		msgServo[4] = 0;
-	if(config & 0b0000010)
-		msgServo[5] = 1;
-	else
-		msgServo[5] = 0;
-	if(config & 0b0000100)
-		msgServo[6] = 1;
-	else
-		msgServo[6] = 0;
-	if(config & 0b0001000)
-		msgServo[7] = 1;
-	else
-		msgServo[7] = 0;
-	if(config & 0b0010000)
-		msgServo[8] = 1;
-	else
-		msgServo[8] = 0;
-	if(config & 0b0100000)
-		msgServo[9] = 1;
-	else
-		msgServo[9] = 0;
-	if(config & 0b1000000)
-		msgServo[10] = 1;
-	else
-		msgServo[10] = 0;
-
-	return trameServo;
-}
-
-Trame PiloteServoDemandeConfigEcho(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_CFG_ECHO;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeConfigEcho(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeCompliance(char id)
-{
-	trameServo.nbChar = 8;
-	msgServo[2] = CMD_SERVO_RETOUR_COMPLIANCE_PARAMS;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeCCWSlope(103, id);
-	delay10ms();
-	msgServo[5] = CDS5516DemandeCCWMargin(103, id);
-	delay10ms();
-	msgServo[6] = CDS5516DemandeCWSlope(103, id);
-	delay10ms();
-	msgServo[7] = CDS5516DemandeCWMargin(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeCoupleActive(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_COUPLE_ACTIVE;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeCoupleActive(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeCoupleMaximum(char id)
-{
-	int valeur = CDS5516DemandeCoupleMaximum(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_COUPLE_MAX;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandeCoupleCourant(char id)
-{
-	int valeur = CDS5516DemandeCoupleCourant(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_COUPLE_COURANT;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoPing(char id)
-{
-	int valeur=CDS5516Ping(103, id);
-	trameServo.nbChar = 11;
-	msgServo[2] = CMD_SERVO_RETOUR_ERREURS;
-	msgServo[3] = id;
-	msgServo[4] = valeur;
-	msgServo[5] = valeur;
-	msgServo[6] = valeur;
-	msgServo[7] = valeur;
-	msgServo[8] = valeur;
-	msgServo[9] = valeur;
-	msgServo[10] = valeur;
-
-	msgServo[4] = (msgServo[4]>>1)&0x01;
-	msgServo[5] = (msgServo[5]>>4)&0x01;
-	msgServo[6] = (msgServo[6])&0x01;
-	msgServo[7] = (msgServo[7]>>6)&0x01;
-	msgServo[8] = (msgServo[8]>>2)&0x01;
-	msgServo[9] = (msgServo[9]>>5)&0x01;
-	msgServo[10] = (msgServo[10]>>3)&0x01;
-
-	return trameServo;
-}
-
-Trame PiloteServoDemandeStatusLevel(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_STATUS_LEVEL;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeStatusReturnLevel(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeTensionMax(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_TENSION_MAX;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeTensionMax(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeTensionMin(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_TENSION_MIN;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeTensionMin(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeTemperatureMax(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_TEMPERATURE_MAX;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeTemperatureMax(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeLed(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_LED;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeLed(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeMouvement(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_MOUVEMENT;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeMouvement(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeModele(char id)
-{
-	int valeur = CDS5516DemandeModele(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_NUMERO_MODELE;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandePositionActuelle(char id)
-{
-	int valeur = CDS5516DemandePositionActuelle(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_POSITION_ACTUELLE;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandePositionCible(char id)
-{
-	int valeur = CDS5516DemandePositionCible(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_POSITION_CIBLE;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandePositionMax(char id)
-{
-	int valeur = CDS5516DemandePositionMax(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_POSITION_MAX;
-	msgServo[3] = id;
-	msgServo[4] = (int)valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandePositionMin(char id)
-{
-	int valeur = CDS5516DemandePositionMin(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_POSITION_MIN;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandeTemperature(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_TEMPERATURE;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeTemperature(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeTension(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_TENSION;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeTension(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeVersionFirmware(char id)
-{
-	trameServo.nbChar = 5;
-	msgServo[2] = CMD_SERVO_RETOUR_VERSION_FIRMWARE;
-	msgServo[3] = id;
-	msgServo[4] = CDS5516DemandeVersionFirmware(103, id);
-	return trameServo;
-}
-
-Trame PiloteServoDemandeVitesseActuelle(char id)
-{
-	int valeur = CDS5516DemandeVitesseActuelle(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_VITESSE_ACTUELLE;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandeVitesseMax(char id)
-{
-	int valeur = CDS5516DemandeVitesseMax(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_VITESSE_MAX;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandeCoupleLimitMax(char id)
-{
-	int valeur = CDS5516DemandeCoupleLimitMax(103, id);
-	trameServo.nbChar = 6;
-	msgServo[2] = CMD_SERVO_RETOUR_COUPLE_LIMIT_MAX;
-	msgServo[3] = id;
-	msgServo[4] = valeur >> 8;
-	msgServo[5] = valeur & 0xFF;
-	return trameServo;
-}
-
-Trame PiloteServoDemandeAllIn(char id)
-{
-	char* tabResultat;
-	char iTab;
-
-	tabResultat = CDS5516DemandeMessageAllIn(id,0x00);
-	trameServo.nbChar = NB_CHAR_ALL_IN + 4;
-	msgServo[2] = CMD_SERVO_RETOUR_ALL_IN;
-	msgServo[3] = id;
-
-	for(iTab = 0; iTab < NB_CHAR_ALL_IN; iTab++)
-		msgServo[4+iTab] = tabResultat[3+iTab];
-
-	return trameServo;
-}
-
-int PiloteServoEnvoiAlarmeLED(char id, char inputVoltage, char angleLimit, char overheating, char range, char checksum, char overload, char instruction)
-{
-	CDS5516EnvoiAlarmeLED(103 , id, inputVoltage, angleLimit, overheating, range, checksum, overload, instruction);
-	return 1;
-}
-
-int PiloteServoEnvoiAlarmeShutdown(char id, char inputVoltage, char angleLimit, char overheating, char range, char checksum, char overload, char instruction)
-{
-	CDS5516EnvoiAlarmeShutdown(103, id, inputVoltage, angleLimit, overheating, range, checksum, overload, instruction);
-	return 1;
-}
-
-int PiloteServoEnvoiComplianceParams(char id, char CCWSlope, char CCWMargin, char CWSlope, char CWMargin)
-{
-	CDS5516EnvoiComplianceParams(103, id, CCWSlope, CCWMargin, CWSlope, CWMargin);
-	return 1;
-}
-
-int PiloteServoEnvoiCoupleActive(char id, char coupleActive)
-{
-	CDS5516EnvoiCoupleActive(103, id, coupleActive);
-	return 1;
-}
-
-int PiloteServoEnvoiCoupleMaximum(char id, unsigned int coupleMax)
-{
-	CDS5516EnvoiCoupleMaximum(103, id, coupleMax);
-	return 1;
-}
-
-int PiloteServoEnvoiCoupleLimitMax(char id, unsigned int coupleLimitMax)
-{
-	CDS5516EnvoiCoupleLimitMax(103, id, coupleLimitMax);
-	return 1;
-}
-
-int PiloteServoEnvoiTensionMax(char id, unsigned int TensionMax)
-{
-	CDS5516EnvoiTensionMax(103, id, TensionMax);
-	return 1;
-}
-
-int PiloteServoEnvoiTensionMin(char id, unsigned int TensionMin)
-{
-	CDS5516EnvoiTensionMin(103, id, TensionMin);
-	return 1;
-}
-
-int PiloteServoEnvoiTemperatureMax(char id, unsigned int TemperatureMax)
-{
-	CDS5516EnvoiTemperatureMax(103, id, TemperatureMax);
-	return 1;
-}
-
-int PiloteServoEnvoiId(char id, char nouvelId)
-{
-	CDS5516EnvoiId(103, id, nouvelId);
-	return 1;
-}
-
-int PiloteServoEnvoiLed(char id, char ledAllume)
-{
-	CDS5516EnvoiLed(103, id, ledAllume);
-	return 1;
-}
-
-int PiloteServoEnvoiPosistionCible(char id, unsigned int positionCible)
-{
-	CDS5516EnvoiPosistionCible(103, id, positionCible);
-	return 1;
-}
-
-int PiloteServoEnvoiPosistionMax(char id, unsigned int positionMax)
-{
-	CDS5516EnvoiPositionMax(103, id, positionMax);
-	return 1;
-}
-
-int PiloteServoEnvoiPosistionMin(char id, unsigned int positionMin)
-{
-	CDS5516EnvoiPositionMin(103, id, positionMin);
-	return 1;
-}
-
-int PiloteServoEnvoiVitesseMax(char id, unsigned int vitesseMax)
-{
-	CDS5516EnvoiVitesseMax(103, id, vitesseMax);
-	return 1;
-}
-
-int PiloteServoReset(char id)
-{
-	CDS5516Reset(103, id);
-	return 1;
-}
-
-int PiloteServoEnvoiBaudrate(char id, unsigned char newBaud)
-{
-	CDS5516EnvoiBaudrate(103,id, newBaud);
-	return 1;
-}
-
-
-
 Trame PiloteEcho(void)
 {
 	BYTE vbat[6];
 	static Trame trameEcho;
-	static BYTE msgEcho[6];
-
+	static BYTE msgEcho[2];
+/*
 	long bat1 = (float)(courant * 0.012693 + 0.343777) * 100;
 	long bat2 = (float)(ADC_Results[1] * 0.012693 + 0.343777) * 100;
 
@@ -1286,15 +638,11 @@ Trame PiloteEcho(void)
 	vbat[1] = bat1 & 0xFF;
 	vbat[2] = bat2 >> 8; // Etalonnage de compétition !
 	vbat[3] = bat2 & 0xFF;
-
+*/
 	trameEcho.nbChar = 6;
 	trameEcho.message = msgEcho;
 	msgEcho[0] = 0xC4;
 	msgEcho[1] = CMD_REPONSE_ECHO;
-	msgEcho[2] = (BYTE) vbat[0];
-	msgEcho[3] = (BYTE) vbat[1];
-	msgEcho[4] = (BYTE) vbat[2];
-	msgEcho[5] = (BYTE) vbat[3];
 	return trameEcho;
 }
 
@@ -1322,6 +670,27 @@ void EnvoiUART2(Trame t)
 	}
 }
 
+Trame Retour_Valeurs_Numeriques(void)
+{
+	Trame Etat_Valeurs;
+	static BYTE Valeurs[8];
+	Etat_Valeurs.nbChar = 8;
+	
+
+	Valeurs[0] = UDP_ID;
+	Valeurs[1] = CMD_REPONSE_VALEURS_NUMERIQUES;
+	Valeurs[2] = PORTA>>8;
+	Valeurs[3] = PORTA&0xFF;
+	Valeurs[4] = PORTB>>8;
+	Valeurs[5] = PORTB&0xFF;
+	Valeurs[6] = PORTC>>8;
+	Valeurs[7] = PORTC&0xFF;
+	
+	
+	Etat_Valeurs.message = Valeurs;
+
+	return Etat_Valeurs;
+}
 
 // Analyse la trame recue et renvoie vers la bonne fonction de pilotage
 // Trame t : Trame ethernet recue
@@ -1332,48 +701,14 @@ Trame AnalyseTrame(Trame t)
 
 	retour = t;
 
-	// Les messages ne commencant pas par 0xC4 ne nous sont pas adressés (RecMove)
-	if(t.message[0] != 0xC4)
+	// Les messages ne commencant pas par la bone adresse ne nous sont pas adresses
+	if(t.message[0] != UDP_ID)
 		return t;
 
 	switch(t.message[1])
 	{
 		case CMD_DEBUG:
-			param1 = t.message[2];							// Numero
-			switch(param1)
-			{
-				case 0:
-					retour = PiloteDebug0(t);
-					break;
-				case 1:
-					retour = PiloteDebug1(t);
-					break;
-				case 2:
-					retour = PiloteDebug2(t);
-					break;
-				case 3:
-					retour = PiloteDebug3(t);
-					break;
-				case 4:
-					retour = PiloteDebug4(t);
-					break;
-				case 5:
-					retour = PiloteDebug5(t);
-					break;
-				case 6:
-					retour = PiloteDebug6(t);
-					break;
-				case 7:
-					retour = PiloteDebug7(t);
-					break;
-				case 8:
-					retour = PiloteDebug8(t);
-					break;
-				case 9:
-					retour = PiloteDebug9(t);
-					break;
-			}
-		break;
+			break;
 
 		case CMD_DEMANDE_ECHO:
 			//retour = PiloteEcho();
@@ -1389,12 +724,6 @@ Trame AnalyseTrame(Trame t)
 		case CMD_ACCELERATION_MOTEUR:
 			break;
 
-
-		case CMD_ENVOI_BAUDRATE_MICRO:
-			param1 = t.message[2];
-			PiloteUARTSetBaudrateMicro(param1);
-			break;
-
 		case CMD_DEMANDE_VALEURS_ANALOGIQUES:
 			return Retour_Valeurs_Analogiques();
 			break;
@@ -1405,248 +734,93 @@ Trame AnalyseTrame(Trame t)
 				case ALIMENTATION_CAPTEUR_COULEUR:
 					alim_capteur_couleur = t.message[3];
 					break;
-			}
-			break;
-
-		case CMD_SERVOMOTEUR:
-
-			msgServo[0] = 0xC4;
-			msgServo[1] = CMD_SERVOMOTEUR;
-			trameServo.message = msgServo;
-
-			switch(t.message[2])
-			{
-				case CMD_SERVO_DEMANDE_ALL_IN:
-					param1 = t.message[3];
-					return PiloteServoDemandeAllIn(param1);
+				case MAKEVACUUM_BACK:
+					if(t.message[3])
+					{
+						PWM2CON1bits.PEN1L = 1;
+						MOT1L=0;
+						P2DC1 = 4000;
+					}
+					else
+					{
+						PWM2CON1bits.PEN1L = 0;
+						MOT1L=1;
+						P2DC1 = 4000;
+					}
 					break;
-				case CMD_SERVO_DEMANDE_CFG_ALARME_LED:
-					param1 = t.message[3];
-					return PiloteServoDemandeConfigAlarmeLED(param1);
+				case MAKEVACUUM_FRONT:
+					if(t.message[3])
+					{
+						PWM2CON1bits.PEN1H = 1;
+						MOT1H=0;
+						P2DC1 = 4000;
+					}
+					else
+					{
+						PWM2CON1bits.PEN1H = 0;
+						MOT1H=1;
+						P2DC1 = 4000;
+					}
+				case OPENVACUUM_BACK:
+					if(t.message[3])
+					{
+						PWM1CON1bits.PEN1L = 1;
+						MOT4L=0;
+						P1DC1 = 4000;
+					}
+					else
+					{
+						PWM1CON1bits.PEN1L = 0;
+						MOT4L=1;
+						P1DC1 = 4000;
+					}
 					break;
-				case CMD_SERVO_DEMANDE_CFG_ALARME_SHUTDOWN:
-					param1 = t.message[3];
-					return PiloteServoDemandeConfigAlarmeShutdown(param1);
-					break;
-				case CMD_SERVO_DEMANDE_CFG_ECHO:
-					param1 = t.message[3];
-					return PiloteServoDemandeConfigEcho(param1);
-					break;
-				case CMD_SERVO_DEMANDE_COMPLIANCE_PARAMS:
-					param1 = t.message[3];
-					return PiloteServoDemandeCompliance(param1);
-					break;
-				case CMD_SERVO_DEMANDE_COUPLE_ACTIVE:
-					param1 = t.message[3];
-					return PiloteServoDemandeCoupleActive(param1);
-					break;
-				case CMD_SERVO_DEMANDE_COUPLE_MAX:
-					param1 = t.message[3];
-					return PiloteServoDemandeCoupleMaximum(param1);
-					break;
-				case CMD_SERVO_DEMANDE_COUPLE_LIMIT_MAX:
-					param1 = t.message[3];
-					return PiloteServoDemandeCoupleLimitMax(param1);
-					break;
-				case CMD_SERVO_DEMANDE_COUPLE_COURANT:
-					param1 = t.message[3];
-					return PiloteServoDemandeCoupleCourant(param1);
-					break;
-				case CMD_SERVO_DEMANDE_ERREURS:
-					param1 = t.message[3];
-					return PiloteServoPing(param1);
-					break;
-				case CMD_SERVO_DEMANDE_STATUS_LEVEL:
-					param1 = t.message[3];
-					return PiloteServoDemandeStatusLevel(param1);
-					break;
-				case CMD_SERVO_DEMANDE_LED:
-					param1 = t.message[3];
-					return PiloteServoDemandeLed(param1);
-					break;
-				case CMD_SERVO_DEMANDE_MOUVEMENT:
-					param1 = t.message[3];
-					return PiloteServoDemandeMouvement(param1);
-					break;
-				case CMD_SERVO_DEMANDE_NUMERO_MODELE:
-					param1 = t.message[3];
-					return PiloteServoDemandeModele(param1);
-					break;
-				case CMD_SERVO_DEMANDE_POSITION_ACTUELLE:
-					param1 = t.message[3];
-					return PiloteServoDemandePositionActuelle(param1);
-					break;
-				case CMD_SERVO_DEMANDE_POSITION_CIBLE:
-					param1 = t.message[3];
-					return PiloteServoDemandePositionCible(param1);
-					break;
-				case CMD_SERVO_DEMANDE_POSITION_MAX:
-					param1 = t.message[3];
-					return PiloteServoDemandePositionMax(param1);
-					break;
-				case CMD_SERVO_DEMANDE_POSITION_MIN:
-					param1 = t.message[3];
-					return PiloteServoDemandePositionMin(param1);
-					break;
-				case CMD_SERVO_DEMANDE_TEMPERATURE:
-					param1 = t.message[3];
-					return PiloteServoDemandeTemperature(param1);
-					break;
-				case CMD_SERVO_DEMANDE_TEMPERATURE_MAX:
-					param1 = t.message[3];
-					return PiloteServoDemandeTemperatureMax(param1);
-					break;
-				case CMD_SERVO_DEMANDE_TENSION:
-					param1 = t.message[3];
-					return PiloteServoDemandeTension(param1);
-					break;
-				case CMD_SERVO_DEMANDE_TENSION_MAX:
-					param1 = t.message[3];
-					return PiloteServoDemandeTensionMax(param1);
-					break;
-				case CMD_SERVO_DEMANDE_TENSION_MIN:
-					param1 = t.message[3];
-					return PiloteServoDemandeTensionMin(param1);
-					break;
-				case CMD_SERVO_DEMANDE_VERSION_FIRMWARE:
-					param1 = t.message[3];
-					return PiloteServoDemandeVersionFirmware(param1);
-					break;
-				case CMD_SERVO_DEMANDE_VITESSE_ACTUELLE:
-					param1 = t.message[3];
-					return PiloteServoDemandeVitesseActuelle(param1);
-					break;
-				case CMD_SERVO_DEMANDE_VITESSE_MAX:
-					param1 = t.message[3];
-					return PiloteServoDemandeVitesseMax(param1);
-					break;
-				case CMD_SERVO_ENVOI_BAUDRATE:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					PiloteServoEnvoiBaudrate(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_CFG_ALARME_LED:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					param3 = t.message[5];
-					param4 = t.message[6];
-					param5 = t.message[7];
-					param6 = t.message[8];
-					param7 = t.message[9];
-					param8 = t.message[10];
-					PiloteServoEnvoiAlarmeLED(param1, param2, param3, param4, param5, param6, param7, param8);
-					break;
-				case CMD_SERVO_ENVOI_CFG_ALARME_SHUTDOWN:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					param3 = t.message[5];
-					param4 = t.message[6];
-					param5 = t.message[7];
-					param6 = t.message[8];
-					param7 = t.message[9];
-					param8 = t.message[10];
-					PiloteServoEnvoiAlarmeShutdown(param1, param2, param3, param4, param5, param6, param7, param8);
-					break;
-				case CMD_SERVO_ENVOI_CFG_ECHO:
-					// TODO
-					break;
-				case CMD_SERVO_ENVOI_COMPLIANCE_PARAMS:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					param3 = t.message[5];
-					param4 = t.message[6];
-					param5 = t.message[7];
-					PiloteServoEnvoiComplianceParams(param1, param2, param3, param4, param5);
-					break;
-				case CMD_SERVO_ENVOI_COUPLE_ACTIVE:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					PiloteServoEnvoiCoupleActive(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_COUPLE_MAX:
-					param1 = t.message[3];
-					param2 = t.message[4] * 256 + t.message[5];
-					PiloteServoEnvoiCoupleMaximum(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_COUPLE_LIMIT_MAX:
-					param1 = t.message[3];
-					param2 = t.message[4] * 256 + t.message[5];
-					PiloteServoEnvoiCoupleLimitMax(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_TENSION_MAX:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					PiloteServoEnvoiTensionMax(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_TENSION_MIN:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					PiloteServoEnvoiTensionMin(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_TEMPERATURE_MAX:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					PiloteServoEnvoiTemperatureMax(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_ID:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					PiloteServoEnvoiId(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_LED:
-					param1 = t.message[3];
-					param2 = t.message[4];
-					PiloteServoEnvoiLed(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_POSITION_CIBLE:
-					param1 = t.message[3];
-					param2 = t.message[4] * 256 + t.message[5];
-					PiloteServoEnvoiPosistionCible(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_POSITION_MAX:
-					param1 = t.message[3];
-					param2 = t.message[4] * 256 + t.message[5];
-					PiloteServoEnvoiPosistionMax(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_POSITION_MIN:
-					param1 = t.message[3];
-					param2 = t.message[4] * 256 + t.message[5];
-					PiloteServoEnvoiPosistionMin(param1, param2);
-					break;
-				case CMD_SERVO_ENVOI_VITESSE_MAX:
-					param1 = t.message[3];
-					param2 = t.message[4] * 256 + t.message[5];
-					PiloteServoEnvoiVitesseMax(param1, param2);
-					break;
-				case CMD_SERVO_RESET:
-					param1 = t.message[3];
-					PiloteServoReset(param1);
+				case OPENVACUUM_FRONT:
+					if(t.message[3])
+					{
+						PWM1CON1bits.PEN1H = 1;
+						MOT4H=0;
+						P1DC1 = 4000;
+					}
+					else
+					{
+						PWM1CON1bits.PEN1H = 0;
+						MOT4H=1;
+						P1DC1 = 4000;
+					}
 					break;
 			}
 			break;
+
 		case CMD_ENVOI_UART:
 			EnvoiUART(t);
 			break;
+
 		case CMD_ENVOI_UART2:
 			EnvoiUART2(t);
 			break;
+
 		case CMD_DEMANDE_CAPTEUR_COULEUR:
       		retour = CouleurRGB(t.message[2]);
 			break;
+
 		case CMD_STOP_MOTEUR:
 			param1 = t.message[2];							// Id moteur
 			param2 = t.message[3];							// StopMode
 			PiloteStop((unsigned char)param1,(unsigned char)param2);
-		break;
+			break;
+
 		case CMD_MOTEUR_POSITION:
 			param1 = t.message[2];							// Id moteur
 			param2 = t.message[3] * 256 + t.message[4];		// Position
 			MotorPosition(param2,(unsigned char)param1);
-		break;
+			break;
+
 		case CMD_MOTEUR_ORIGIN:
 			param1 = t.message[2];							// Id moteur
 			MotorPosition(-500,(unsigned char)param1);
-		break;
+			break;
+
 		case CMD_MOTEUR_INIT:
 			param1 = t.message[2];							// Id moteur
 			switch(param1)
@@ -1654,14 +828,20 @@ Trame AnalyseTrame(Trame t)
 				case 0:
 					POS1CNT=0;
 					revolutions[0]=0;
-				break;
+					break;
 				case 1:
 					POS2CNT=0;
 					revolutions[1]=0;
-				break;
+					break;
 			}
-		break;
-		default :
+			break;
+
+		case CMD_DEMANDE_VALEURS_NUMERIQUES:
+			return Retour_Valeurs_Numeriques();
+		
+		case CMD_DEMANDE_CAPTEUR_ONOFF:
+			return Retour_Capteur_Onoff(t.message[2]);
+		default:
 			return retour;
 	}
 	return retour;

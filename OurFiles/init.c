@@ -108,14 +108,14 @@ void InitPorts(void)
 
 
 	// Initialisation des pins pwms
-	MOT1L = 0;
-	MOT1H = 0;
+	MOT1L = 1;
+	MOT1H = 1;
 	MOT2L = 0;
 	MOT2H = 0;
 	MOT3L = 0;
 	MOT3H = 0;
-	MOT4L = 0;
-	MOT4H = 0;
+	MOT4L = 1;
+	MOT4H = 1;
 }
 
 
