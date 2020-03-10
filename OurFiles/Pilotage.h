@@ -141,8 +141,8 @@ void PiloteRecalageStepper(void);
 #define CMD_VITESSE_MOTEUR				0x67
 #define CMD_ACCELERATION_MOTEUR			0x68
 #define CMD_STOP_MOTEUR					0x69
-#define CMD_REPONSE_BLOCAGE				0x70
-#define CMD_REPONSE_FIN					0x71
+#define CMD_REPONSE_FIN					0x70
+#define CMD_REPONSE_BLOCAGE				0x71
 
 // ID Actionneurs
 #define ID_MOTEUR_ASCENSEUR_GAUCHE		0x00

@@ -103,7 +103,7 @@ int main(void)
 	Trame envoiFin0;
 	static BYTE mess0[3];
 	mess0[0] = UDP_ID;
-	mess0[1] = 0x70; // envoiFin
+	mess0[1] = CMD_REPONSE_FIN; // envoiFin
 	mess0[2] = 0; // id moteur
 	envoiFin0.message = mess0;
 	envoiFin0.nbChar = 3;
@@ -111,7 +111,7 @@ int main(void)
 	Trame envoiFin1;
 	static BYTE mess1[3];
 	mess1[0] = UDP_ID; 
-	mess1[1] = 0x70; // envoiFin
+	mess1[1] = CMD_REPONSE_FIN; // envoiFin
 	mess1[2] = 1; // id moteur
 	envoiFin1.message = mess1;
 	envoiFin1.nbChar = 3;
@@ -119,7 +119,7 @@ int main(void)
 	Trame envoiBlocage0;
 	static BYTE messblocage0[3];
 	messblocage0[0] = UDP_ID;
-	messblocage0[1] = 0x71; // envoiBlocage
+	messblocage0[1] = CMD_REPONSE_BLOCAGE; // envoiBlocage
 	messblocage0[2] = 0; // id moteur
 	envoiBlocage0.message = messblocage0;
 	envoiBlocage0.nbChar = 3;
@@ -127,7 +127,7 @@ int main(void)
 	Trame envoiBlocage1;
 	static BYTE messblocage1[3];
 	messblocage1[0] = UDP_ID;
-	messblocage1[1] = 0x71; // envoiBlocage
+	messblocage1[1] = CMD_REPONSE_BLOCAGE; // envoiBlocage
 	messblocage1[2] = 1; // id moteur
 	envoiBlocage1.message = messblocage1;
 	envoiBlocage1.nbChar = 3;
