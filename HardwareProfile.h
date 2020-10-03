@@ -642,9 +642,9 @@
 
 	// ENC28J60 I/O pins
 	#define ENC_CS_TRIS			(TRISAbits.TRISA9)	// Comment this line out if you are using the ENC424J600/624J600, ZeroG ZG2100, or other network controller.
-	#define ENC_CS_IO			(PORTAbits.RA9)
+	#define ENC_CS_IO			(LATAbits.LATA9)
 	#define ENC_RST_TRIS		(TRISAbits.TRISA4)	// Not connected by default.  It is okay to leave this pin completely unconnected, in which case this macro should simply be left undefined.
-	#define ENC_RST_IO			(PORTAbits.RA4)
+	#define ENC_RST_IO			(LATAbits.LATA4)
 	// SPI SCK, SDI, SDO pins are automatically controlled by the 
 	// PIC24/dsPIC/PIC32 SPI module 
 //	#if defined(__C30__)	// PIC24F, PIC24H, dsPIC30, dsPIC33
