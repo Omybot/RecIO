@@ -121,10 +121,10 @@ Trame Retour_Capteur_Onoff(unsigned char id_capteur)
 	switch(id_capteur)
 	{
 		case VACUOSTAT_BACK:
-			Valeurs[3] = !PORTCbits.RC1;
+			Valeurs[3] = PORTCbits.RC0;
 			break;
 		case VACUOSTAT_FRONT:
-			Valeurs[3] = PORTCbits.RC2;
+			Valeurs[3] = PORTBbits.RB3;
 			break;
 	}
 	
@@ -734,7 +734,7 @@ Trame AnalyseTrame(Trame t)
 				case ALIMENTATION_CAPTEUR_COULEUR:
 					alim_capteur_couleur = t.message[3];
 					break;
-				case MAKEVACUUM_BACK:
+				case OPENVACUUM_FRONT: 
 					if(t.message[3])
 					{
 						PWM2CON1bits.PEN1L = 1;
@@ -748,7 +748,7 @@ Trame AnalyseTrame(Trame t)
 						P2DC1 = 4000;
 					}
 					break;
-				case MAKEVACUUM_FRONT:
+				case OPENVACUUM_BACK: 
 					if(t.message[3])
 					{
 						PWM2CON1bits.PEN1H = 1;
@@ -761,7 +761,8 @@ Trame AnalyseTrame(Trame t)
 						MOT1H=1;
 						P2DC1 = 4000;
 					}
-				case OPENVACUUM_BACK:
+					break;
+				case MAKEVACUUM_BACK:
 					if(t.message[3])
 					{
 						PWM1CON1bits.PEN1L = 1;
@@ -775,7 +776,7 @@ Trame AnalyseTrame(Trame t)
 						P1DC1 = 4000;
 					}
 					break;
-				case OPENVACUUM_FRONT:
+				case MAKEVACUUM_FRONT: 
 					if(t.message[3])
 					{
 						PWM1CON1bits.PEN1H = 1;

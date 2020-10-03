@@ -73,9 +73,9 @@ void InitPorts(void)
 	TRISBbits.TRISB14=0; // MOT4_PWMH - Moteurs
 	TRISBbits.TRISB15=0; // MOT4_PWML - Moteurs
 	
-	TRISCbits.TRISC0=0; // RC0 - Mezzanine - (RECIO)Lulu RX - UART TX
+	TRISCbits.TRISC0=1; // RC0 - Mezzanine - (RECIO)Lulu RX - UART TX
 	TRISCbits.TRISC1=1; // RC1 - Mezzanine - (RECIO)AX12/CDS RX
-	TRISCbits.TRISC2=0; // RC2 - Mezzanine - (RECIO)AX12/CDS TX
+	TRISCbits.TRISC2=1; // RC2 - Mezzanine - (RECIO)AX12/CDS TX
 	TRISCbits.TRISC3=0; // SCK1 - Ethernet MSCK
 	TRISCbits.TRISC4=0; // SDO1 - Ethernet MOSI
 	TRISCbits.TRISC5=1; // SDI1 - Ethernet MISO
@@ -95,8 +95,8 @@ void InitPorts(void)
 	LATAbits.LATA3 = 1;	// 1 J'envoie et 0 je réceptionne	//Initialisation du sens de communication pour les AX12
     
 	// UART Lulu
-	RPOR8bits.RP16R = 0b00101;		//TX RP16 U2TX
-    RPINR19bits.U2RXR = 3;			//RX RP3 U2RXR
+	//RPOR8bits.RP16R = 0b00101;		//TX RP16 U2TX
+    //RPINR19bits.U2RXR = 3;			//RX RP3 U2RXR
 
 	// Capteur de couleur OUT  
 	RPINR7bits.IC1R 	= 4;		//RP4

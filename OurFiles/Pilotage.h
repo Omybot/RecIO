@@ -179,13 +179,13 @@ void PiloteRecalageStepper(void);
 
 // Liste des actionneurs
 #define ALIMENTATION_CAPTEUR_COULEUR	0x01
-#define MAKEVACUUM_BACK					0x11
-#define MAKEVACUUM_FRONT				0x13
-#define OPENVACUUM_BACK					0x20
-#define OPENVACUUM_FRONT				0x22
+#define MAKEVACUUM_BACK					0x13
+#define MAKEVACUUM_FRONT				0x11
+#define OPENVACUUM_BACK					0x22
+#define OPENVACUUM_FRONT				0x20
 
-#define VACUOSTAT_BACK					0x11
-#define VACUOSTAT_FRONT					0x13
+#define VACUOSTAT_BACK					0x13
+#define VACUOSTAT_FRONT					0x11
 
 
 #endif // __PILOTAGE_H__
