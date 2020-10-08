@@ -864,6 +864,7 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 
 	value = value * 2; // Due au changement de hacheur LMD18220 ==> Freescale 
 
+	value = value/2; // bridage volontaire :)
 
 	switch(motor)
 	{

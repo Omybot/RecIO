@@ -164,6 +164,7 @@ int main(void)
 
 	DelayMs(100); 
 
+
 	for(i=0;i<SIZE_TRAME_INIT_SERVO;i++)
 	{
 		buffer_envoi_uart[ptr_write_buffer_uart++]=InitServo[i];

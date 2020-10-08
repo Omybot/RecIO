@@ -819,7 +819,7 @@ Trame AnalyseTrame(Trame t)
 
 		case CMD_MOTEUR_ORIGIN:
 			param1 = t.message[2];							// Id moteur
-			MotorPosition(-500,(unsigned char)param1);
+			MotorPosition(-5000,(unsigned char)param1);
 			break;
 
 		case CMD_MOTEUR_INIT:
