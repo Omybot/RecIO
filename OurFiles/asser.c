@@ -757,7 +757,7 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 	//buff_position[1][buff_position_ptr++] = raw_position[1];
 
 	// Calcul de la position reelle en mm
-	real_pos[0] = MM_SCALER * (double)raw_position[0] / 0.855; // Roue droite
+	real_pos[0] = MM_SCALER * (double)raw_position[0]; // Roue droite
 	real_pos[1] = 1.000 * MM_SCALER * (double)raw_position[1]; // Roue gauche
 
 	cor[0] = 0;
@@ -768,7 +768,7 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 		if(pid_power[i])
 		{
 			if(i==0)
-				erreur[0] = targ_pos[0]*0.855* MM_INVSCALER - (double)raw_position[0];// ; // Calcul de l'erreur en pas codeur
+				erreur[0] = targ_pos[0]* MM_INVSCALER - (double)raw_position[0];// ; // Calcul de l'erreur en pas codeur
 			else
 				erreur[1] = targ_pos[1]* MM_INVSCALER - (double)raw_position[1];// ; // Calcul de l'erreur en pas codeur
 		
@@ -864,7 +864,7 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 
 	value = value * 2; // Due au changement de hacheur LMD18220 ==> Freescale 
 
-	value = value/2.5; // bridage volontaire :)
+	value = value/2.2; // bridage volontaire :)
 
 	switch(motor)
 	{
@@ -887,17 +887,17 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 		case AVANT:
 		case GAUCHE: 	// Doigt Avant
 		case MOTEUR_2:	if(motiontype == 3)
-							{
-								if(value >  2000) value =  2000;
-								if(value < -2000) value = -2000;	
-						
-							}
+						{
+							if(value >  2000) value =  2000;
+							if(value < -2000) value = -2000;	
+					
+						}
 						if(value > 0)	// Moteur Gauche
 						{
 							PWM1CON1bits.PEN3L = 0;
 							PWM1CON1bits.PEN3H = 1;
 							MOT2H=0;
-							P1DC3 = (unsigned int)(+value);		
+							P1DC3 = (unsigned int)(value);		
 						}
 						else
 						{
@@ -909,8 +909,7 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 						break;
 		case ARRIERE:
 		case DROITE:	// Doigt Arriere
-		case MOTEUR_3:	//value=value/2; // bridage moteur 6V
-						if(motiontype == 3)
+		case MOTEUR_3:	if(motiontype == 3)
 						{
 							if(value >  2000) value =  2000;
 							if(value < -2000) value = -2000;	
