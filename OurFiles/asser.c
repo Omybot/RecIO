@@ -864,7 +864,7 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 
 	value = value * 2; // Due au changement de hacheur LMD18220 ==> Freescale 
 
-	value = value/2; // bridage volontaire :)
+	value = value/2.5; // bridage volontaire :)
 
 	switch(motor)
 	{
@@ -909,7 +909,7 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 						break;
 		case ARRIERE:
 		case DROITE:	// Doigt Arriere
-		case MOTEUR_3:	value=value/2; // bridage moteur 6V
+		case MOTEUR_3:	//value=value/2; // bridage moteur 6V
 						if(motiontype == 3)
 						{
 							if(value >  2000) value =  2000;

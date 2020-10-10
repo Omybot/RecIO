@@ -234,7 +234,7 @@ void InitQEI(void)
 	QEI1CONbits.QEIM  = 0b111;
 	QEI2CONbits.QEIM  = 0b111;
 	QEI1CONbits.SWPAB = 0;
-	QEI2CONbits.SWPAB = 0;
+	QEI2CONbits.SWPAB = 1;
 	POS1CNT = 0x0000;
 	POS2CNT = 0x0000;
 	//DFLT1CONbits.QECK = 0b111;
