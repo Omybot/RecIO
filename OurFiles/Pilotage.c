@@ -65,6 +65,31 @@ unsigned char scan;
 unsigned int Valeur_Capteur_Couleur = 24;
 unsigned int Cpt_Tmr_Periode = 0;
 
+Trame TensionBatterie(void)
+{
+	double tension_batterie;
+	Trame Etat_Valeurs;
+	static BYTE Valeurs[4];
+	Etat_Valeurs.nbChar = 4;
+
+	tension_batterie = (double)ADC_Results[4] * 3.3 / 4096 * (15 + 2) / 2;
+	tension_batterie = tension_batterie * 100 ; // résultats en 0.01 V 
+
+	Valeurs[0] = UDP_ID;
+	Valeurs[1] = TRAME_BATTERIE_RESP;
+	Valeurs[2] = (unsigned int)tension_batterie >> 8;
+	Valeurs[3] = (unsigned int)tension_batterie & 0xFF;
+
+	// 12 bits ADC / 0 à 3.3V
+	// Formule : Vadc = ADC_Results * 3.3 / 4096
+	// Resistance du haut : 15k / Resistance du bas : 2k
+	// Formule : Vbat = Vadc * (15 + 2) / 2 
+
+	Etat_Valeurs.message = Valeurs;
+
+	return Etat_Valeurs;
+}
+
 int PiloteStop(unsigned char id_moteur,unsigned char stopmode)
 {
 	Motors_Stop(stopmode,id_moteur);		
@@ -137,7 +162,7 @@ Trame Retour_Capteur_Onoff(unsigned char id_capteur)
 Trame Retour_Valeurs_Analogiques(void)
 {
 	Trame Etat_Valeurs;
-	static BYTE Valeurs[4];
+	static BYTE Valeurs[20];
 	Etat_Valeurs.nbChar = 20;
 
 
@@ -703,7 +728,10 @@ Trame AnalyseTrame(Trame t)
 
 	// Les messages ne commencant pas par la bone adresse ne nous sont pas adresses
 	if(t.message[0] != UDP_ID)
+	{
+		t.message[0] = UDP_ID;
 		return t;
+	}
 
 	switch(t.message[1])
 	{
@@ -711,7 +739,7 @@ Trame AnalyseTrame(Trame t)
 			break;
 
 		case CMD_DEMANDE_ECHO:
-			//retour = PiloteEcho();
+			retour = TensionBatterie();
 			break;
 
 		case CMD_VITESSE_MOTEUR:
@@ -842,6 +870,10 @@ Trame AnalyseTrame(Trame t)
 		
 		case CMD_DEMANDE_CAPTEUR_ONOFF:
 			return Retour_Capteur_Onoff(t.message[2]);
+
+		case TRAME_BATTERIE_ASK:
+			return TensionBatterie();
+
 		default:
 			return retour;
 	}

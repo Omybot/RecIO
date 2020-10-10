@@ -167,6 +167,8 @@ void PiloteRecalageStepper(void);
 #define CMD_REPONSE_VALEURS_NUMERIQUES	0x79
 
 #define CMD_DETECTION_SECU_ASCENSEUR	0x82
+#define TRAME_BATTERIE_ASK 				0xF1
+#define TRAME_BATTERIE_RESP 			0xF2
 
 // Alimentation
 #define CMD_ALIMENTATION				0x80

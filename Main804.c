@@ -178,6 +178,7 @@ int main(void)
 
 	while(1)
   	{
+		TensionBatterie();
 		if(flag_envoi0) 
 		{	
 			EnvoiUserUdp(envoiFin0);
