@@ -90,9 +90,9 @@ void InitPorts(void)
 	RPINR20bits.SDI1R = 21     ; // SDI1 		<==> RP21 RC5
 	
 	// UART CAN
-	RPOR1bits.RP2R = 0b00011;		//TX RP2 U1TX
-    RPINR18bits.U1RXR = 4;			//RX RP17 U1RXR
-	LATAbits.LATA3 = 1;	// 1 J'envoie et 0 je réceptionne	//Initialisation du sens de communication pour les AX12
+	//RPOR1bits.RP2R = 0b00011;		//TX RP2 U1TX
+    //RPINR18bits.U1RXR = 4;			//RX RP17 U1RXR
+	//LATAbits.LATA3 = 1;	// 1 J'envoie et 0 je réceptionne	//Initialisation du sens de communication pour les AX12
     
 	// UART Lulu
 	//RPOR8bits.RP16R = 0b00101;		//TX RP16 U2TX
