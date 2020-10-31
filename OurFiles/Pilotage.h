@@ -188,6 +188,6 @@ void PiloteRecalageStepper(void);
 
 #define VACUOSTAT_BACK					0x13
 #define VACUOSTAT_FRONT					0x11
-
+#define PRESENCE_GOBELET				0x20
 
 #endif // __PILOTAGE_H__

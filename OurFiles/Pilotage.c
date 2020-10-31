@@ -151,6 +151,9 @@ Trame Retour_Capteur_Onoff(unsigned char id_capteur)
 		case VACUOSTAT_FRONT:
 			Valeurs[3] = PORTBbits.RB3;
 			break;
+		case PRESENCE_GOBELET:
+			Valeurs[3] = PORTAbits.RA8;
+			break;
 	}
 	
 	

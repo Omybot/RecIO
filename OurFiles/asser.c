@@ -139,8 +139,15 @@ void MotorPosition(double position, unsigned char id_moteur)
 	flag_ligne=1;
 	first[id_moteur]=1;
 	motiontype = 0; // Avance
-	Motors_SetAcceleration(accel_def_ligne, id_moteur); 
-	Motors_SetSpeed(speed_def_ligne, id_moteur); 
+	if(position < -4000) // Cas specifique du recalage pour init
+	{
+		Motors_SetSpeed(speed_def_ligne/3, id_moteur); // Vitesse reduite pour les recalages
+	}
+	else
+	{
+		Motors_SetSpeed(speed_def_ligne, id_moteur); 
+	}	
+	Motors_SetAcceleration(accel_def_ligne/2, id_moteur); 
 	targ_pos[id_moteur] = position;
 	Motors_Start(id_moteur);
 
@@ -673,9 +680,9 @@ unsigned char Motors_Task(void)
 	else if(polaire!=1)
 	{
 		for(i=0;i<N;i++)
-			if(fabs(cons_pos[i] - real_pos[i]) > 20)
+			if(fabs(cons_pos[i] - real_pos[i]) > 10) //20
 			{
-				if(cpt_blocage[i]++>20 && pid_power[i]==1)
+				if(cpt_blocage[i]++>5 && pid_power[i]==1) //20
 				{
 					
 					if(i==0) 
@@ -821,7 +828,7 @@ unsigned char pid(unsigned char power,double * targ_pos,double * real_pos)
 			}
 
 //			if((saturation_pos[i]>3000)||(saturation_neg[i]>3000))
-			if((saturation_pos[i]>5000)||(saturation_neg[i]>5000))
+			if((saturation_pos[i]>30)||(saturation_neg[i]>30)) // 5000
 			{
 				saturation_pos[0]=0;
 				saturation_neg[0]=0;
@@ -864,7 +871,7 @@ char pwm(unsigned char motor, double valeur) // Value = +/- 4000
 
 	value = value * 2; // Due au changement de hacheur LMD18220 ==> Freescale 
 
-	value = value/2.2; // bridage volontaire :)
+	//value = value/2.2; // bridage volontaire :)
 
 	switch(motor)
 	{

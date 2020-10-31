@@ -5,9 +5,9 @@
 
 
 #define N				2						// Nombre de moteurs
-#define DEFAULT_KP		50						// Coefficient proporionnel 
+#define DEFAULT_KP		50/2						// Coefficient proporionnel 
 #define DEFAULT_KI		0						// Coefficient integral (inverse !)
-#define DEFAULT_KD		200						// Coefficient derive
+#define DEFAULT_KD		200/2						// Coefficient derive
 #define CODEUR			1024 					// Nombre de pas par tour moteur (sans le ratio x4)
 #define REDUCTEUR		1						// Reducteur utilise en sortie d'arbre moteur (=1 si roue codeuse indépendante)
 #define DIAMETRE_ROUE 	37.5974047870550390625						// Diametre de la roue motrice (ou roue codeuse si indépendante) en mm 
@@ -16,8 +16,8 @@
 #define COEFF_ROUE		1/0.855			// Coeff d'ajustement pour le diametre de la roue
 #define MM_SCALER		COEFF_ROUE*DIAMETRE_ROUE*PI/(4*CODEUR*REDUCTEUR) // Formule de conversion [pas]<==>[mm]
 #define MM_INVSCALER	4*CODEUR*REDUCTEUR/(COEFF_ROUE*DIAMETRE_ROUE*PI)
-#define DEFAULT_SPEED	1500						// Vitesse par défaut en mm/s
-#define DEFAULT_ACCEL	9000					// Acceleration par défaut en mm/s^2
+#define DEFAULT_SPEED	4000						// Vitesse par défaut en mm/s
+#define DEFAULT_ACCEL	30000					// Acceleration par défaut en mm/s^2
 #define ERROR_ALLOWED	0						// En cas de sifflement moteur intempestif (en pas)
 
 

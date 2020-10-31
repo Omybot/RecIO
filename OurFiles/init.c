@@ -52,7 +52,7 @@ void InitPorts(void)
 	TRISAbits.TRISA3=0; // RA3 - Mezzanine - (RECIO)AX12/CDS Direction
 	TRISAbits.TRISA4=0; // RST - Ethernet RST
 	TRISAbits.TRISA7=0; // RA7 - Mezzanine - (RECIO)Capteur couleur - S3
-	TRISAbits.TRISA8=0; // RA8 - Mezzanine - (RECIO)Capteur couleur - LED
+	TRISAbits.TRISA8=1; // RA8 - Mezzanine - (RECIO)Capteur couleur - LED
 	TRISAbits.TRISA9=0; // CS - Ethernet CS
 	TRISAbits.TRISA10=0; // RA10 - Mezzanine - (RECIO)Capteur couleur - S2
 	

@@ -39,6 +39,7 @@ unsigned char save_write2;
 unsigned char save_read2;
 unsigned char flag_envoi_uart2,ptr_write_buffer_uart2;
 
+unsigned char presence_gobelet_value=0, presence_gobelet_value_old=0, presence_gobelet_cpt=0;
 
 // Fin UART
 
@@ -135,6 +136,10 @@ int main(void)
 
 	InitClk(); 		// Initialisation de l'horloge
 	InitPorts(); 	// Initialisation des ports E/S
+	
+	presence_gobelet_value = PORTAbits.RA8;
+	presence_gobelet_value_old = presence_gobelet_value;
+	
 	Init_Timer();	// Initialisation Timer2,Timer4 & Timer5
 	InitQEI(); 		// Initialisation des entrées en quadrature
 	InitPWM();		// Configuration du module PWM 
@@ -178,6 +183,15 @@ int main(void)
 
 	while(1)
   	{
+		if(presence_gobelet_cpt == 50)
+		{
+			trame=Retour_Capteur_Onoff(PRESENCE_GOBELET);
+			trame.message[3] = presence_gobelet_value;
+			EnvoiUserUdp(trame);
+			presence_gobelet_cpt=0;
+			presence_gobelet_value_old = presence_gobelet_value;
+		}
+
 		if(flag_envoi0) 
 		{	
 			EnvoiUserUdp(envoiFin0);
@@ -381,6 +395,16 @@ void __attribute__ ((interrupt, no_auto_psv)) _T4Interrupt(void)
 	static double vitesse_canon_brut;
 
 	flag = 0;
+
+	presence_gobelet_value = !PORTAbits.RA8;
+	if(presence_gobelet_value_old != presence_gobelet_value)
+	{
+		if(presence_gobelet_cpt<50) presence_gobelet_cpt++;
+	}
+	else
+	{
+		presence_gobelet_cpt = 0;
+	}
 	
 	motor_flag = Motors_Task(); // Si prend trop de ressource sur l'udp, inclure motortask dans le main	
 	timeout_servo++;
